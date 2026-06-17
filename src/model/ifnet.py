@@ -93,7 +93,10 @@ class IFNet(nn.Module):
         # 1-channel slicing
         img0 = x[:, 0:1]
         img1 = x[:, 1:2]
-        gt = x[:, 2:]
+        if x.shape[1] == 3:
+            gt = x[:, 2:3]
+        else:
+            gt = None
 
         flow_list = []
         merged = []
@@ -123,7 +126,7 @@ class IFNet(nn.Module):
             merged.append(merged_student)
 
         # Teacher model condition updated for 1-channel GT
-        if gt.shape[1] == 1:
+        if gt is not None:
             flow_d, mask_d = self.block_tea(
                 torch.cat((img0, img1, warped_img0, warped_img1, mask, gt), 1),
                 flow,
@@ -143,7 +146,8 @@ class IFNet(nn.Module):
 
         for i in range(3):
             merged[i] = merged[i][0] * mask_list[i] + merged[i][1] * (1 - mask_list[i])
-            if gt.shape[1] == 1:
+            # FIX: Only calculate teacher loss masking if GT actually exists
+            if gt is not None and gt.shape[1] == 1:
                 loss_mask = (
                     (
                         (merged[i] - gt).abs().mean(1, True)

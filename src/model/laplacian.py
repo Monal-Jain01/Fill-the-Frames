@@ -31,9 +31,11 @@ def upsample(x):
     return conv_gauss(x_up, 4*gauss_kernel(channels=x.shape[1]))
 
 def conv_gauss(img, kernel):
-    img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
-    out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
-    return out
+    # FIX: Correct function signature. Device transfer applied safely on kernel argument.
+    n_channels, _, kw, kh = kernel.shape
+    kernel = kernel.to(img.device)
+    img = F.pad(img, (kw//2, kh//2, kw//2, kh//2), mode='replicate')
+    return F.conv2d(img, kernel, groups=n_channels)
 
 def laplacian_pyramid(img, kernel, max_levels=3):
     current = img
