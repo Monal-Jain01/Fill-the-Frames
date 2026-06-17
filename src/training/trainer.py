@@ -48,7 +48,7 @@ class Trainer:
             
             # Predict
             flow_list, mask, merged, flow_tea, merged_tea, loss_distill = self.model(
-                torch.cat((imgs, gt), 1), scale_list=[4, 2, 1]
+                torch.cat((imgs, gt), 1), scale=[4, 2, 1]
             )
             loss_student = sum(self.criterion(m, gt) for m in merged)
             
