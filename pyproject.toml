@@ -6,8 +6,10 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.43.31",
+    "netcdf4>=1.7.4",
     "numpy>=2.4.6",
     "pytest>=9.1.0",
     "pyyaml>=6.0.3",
+    "torch>=2.12.0",
     "xarray>=2026.4.0",
 ]
