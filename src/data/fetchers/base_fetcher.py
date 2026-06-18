@@ -32,6 +32,15 @@ class SatelliteFetcher(ABC):
             list[str]: A list of local file paths that were downloaded.
         """
         pass
+    
+    @abstractmethod
+    def fetch_single_file(self,exact_key: str,output_dir: str) -> str:
+        """
+        Downloads one exact satellite file.
+        Used for debugging/visual inspection.
+        """
+        pass
+
 
     @abstractmethod
     def apply_planck_function(self, raw_data_path: str) -> torch.Tensor:

@@ -113,8 +113,22 @@ class HimawariFetcher(SatelliteFetcher):
             frame_dirs.append(timestamp_dir)
 
         return frame_dirs
+    
 
-
+    def fetch_single_file(
+        self,
+        exact_prefix: str,
+        output_dir: str
+    ) -> str:
+        """
+        Downloads one full Himawari timestamp
+        (all 10 B14 segments).
+        """
+        return self.fetch_chunk(
+            exact_prefix,
+            output_dir
+        )[0]
+    
     def apply_planck_function(
         self,
         raw_data_path: str

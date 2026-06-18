@@ -55,6 +55,25 @@ class GOESFetcher(SatelliteFetcher):
 
         return downloaded_paths
 
+    def fetch_single_file(
+        self,
+        exact_key: str,
+        output_dir: str
+    ) -> str:
+        os.makedirs(output_dir, exist_ok=True)
+
+        filename = os.path.basename(exact_key)
+        local_path = os.path.join(output_dir, filename)
+
+        if not os.path.exists(local_path):
+            self.s3_client.download_file(
+                self.bucket_name,
+                exact_key,
+                local_path
+            )
+
+        return local_path
+
     def apply_planck_function(self, raw_data_path: str) -> torch.Tensor:
         with xr.open_dataset(raw_data_path, mask_and_scale=True) as ds:
             rad = ds["Rad"]
