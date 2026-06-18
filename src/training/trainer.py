@@ -92,34 +92,36 @@ class Trainer:
             imgs = torch.cat((img0, img1), dim=1)
             
             self.optimizer.zero_grad()
-            
-            # Predict
-            flow_list, mask, merged, flow_tea, merged_tea, loss_distill = self.model(
-                torch.cat((imgs, gt), 1), scale=[4, 2, 1]
-            )
-            
-            # Handle the tuple return from the new CompositeLoss
-            loss_student = 0
-            for m in merged:
-                l_total, _ = self.criterion(m, gt)
-                loss_student += l_total
-            
-            if merged_tea is not None:
-                loss_teacher, _ = self.criterion(merged_tea, gt)
-            else:
-                loss_teacher = 0
-            
-            loss = loss_student + loss_teacher + (loss_distill * 0.01)
-            
+
+            # 🚨 SOTA: Mixed Precision Autocast (Single Forward Pass)
+            with torch.amp.autocast(device_type=self.device.type):
+                flow_list, mask, merged, flow_tea, merged_tea, loss_distill = self.model(
+                    torch.cat((imgs, gt), 1), scale=[4, 2, 1]
+                )
+                
+                loss_student = 0
+                for m in merged:
+                    l_total, _ = self.criterion(m, gt)
+                    loss_student += l_total
+                
+                # Fixed tuple unpacking for teacher loss
+                if merged_tea is not None:
+                    loss_teacher, _ = self.criterion(merged_tea, gt)
+                else:
+                    loss_teacher = 0
+                
+                loss = loss_student + loss_teacher + (loss_distill * 0.01)
+
+            # 🚨 SOTA: Single Backward Pass
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
+            
             if batch_idx % 10 == 0:
                 logger.info(f"Epoch {epoch} | Batch {batch_idx}/{len(dataloader)} | Loss: {loss.item():.4f}")
                 self.writer.add_scalar('Loss/train', loss.item(), self.global_step)
                 
             self.global_step += 1
-            
     def save_checkpoint(self, filename: str = "latest_model.pth") -> None:
         path = os.path.join(self.settings.training.checkpoints_dir, filename)
         # 🚨 Use async saver instead of torch.save directly
