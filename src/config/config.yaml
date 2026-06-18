@@ -3,11 +3,13 @@ training:
   batch_size: 4
   learning_rate: 0.0001
   checkpoints_dir: "/kaggle/working/checkpoints"
+  load_model_path: ""
 data:
-  s3_bucket: "noaa-goes16"
+  s3_bucket: "noaa-goes19" # Agar GOES-19 chahiye toh yahan update kar lena
   download_dir: "/kaggle/working/goes_data"
+  prefix_type: "ABI-L1b-RadF"  # 🚨 Naya prefix variable
   year: 2024
-  start_day: 264   # Sept 20, 2024
-  end_day: 294     # Oct 20, 2024
+  start_day: 264   
+  end_day: 294     
   frame_step: 3
   crop_size: 512

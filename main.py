@@ -17,7 +17,7 @@ def main():
     s3_manager = S3Manager(settings)
     model = IFNet()
     
-    # 🚨 Load previous checkpoint if it exists
+    # Load previous checkpoint if it exists
     checkpoint_path = settings.training.load_model_path
     
     if os.path.exists(checkpoint_path):
@@ -31,8 +31,10 @@ def main():
     year = settings.data.year
     start_day = settings.data.start_day
     end_day = settings.data.end_day
+    prefix_type = settings.data.prefix_type  # 🚨 Config se prefix uthaya
     
-    chunks = [f"ABI-L1b-RadC/{year}/{day:03d}/" for day in range(start_day, end_day + 1)]
+    # 🚨 Hardcoded RadC hata diya!
+    chunks = [f"{prefix_type}/{year}/{day:03d}/" for day in range(start_day, end_day + 1)]
     
     for chunk_idx, chunk in enumerate(chunks):
         logger.info(f"=== Fetching and Processing Chunk {chunk_idx + 1}/{len(chunks)}: {chunk} ===")
@@ -45,8 +47,8 @@ def main():
             trainer.save_checkpoint("latest_model.pth")
             
         s3_manager.purge_chunk()
-            
+    trainer.shutdown() 
     logger.info("🔥 Config-Driven Multi-Month Training Complete!")
-
+            
 if __name__ == "__main__":
     main()

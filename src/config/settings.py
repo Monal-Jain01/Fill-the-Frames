@@ -7,15 +7,16 @@ class TrainingConfig:
     batch_size: int
     learning_rate: float
     checkpoints_dir: str
-    load_model_path: str = ""  # 🚨 Naya path variable yahan add ho gaya
+    load_model_path: str = ""
 
 @dataclass
 class DataConfig:
     s3_bucket: str
     download_dir: str
-    year: int          # Pura saal as integer
-    start_day: int     # Start Julian day
-    end_day: int       # End Julian day
+    prefix_type: str   # 🚨 Yahan prefix_type add kar diya
+    year: int
+    start_day: int
+    end_day: int
     frame_step: int
     crop_size: int
 
