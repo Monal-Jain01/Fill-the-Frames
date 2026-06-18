@@ -27,7 +27,7 @@ class HimawariFetcher(SatelliteFetcher):
 
         self.s3_client = boto3.client(
             "s3",
-            config=Config(signature_version=UNSIGNED)
+            config=Config(signature_version=UNSIGNED,max_pool_connections=50)
         )
 
     def fetch_chunk(
