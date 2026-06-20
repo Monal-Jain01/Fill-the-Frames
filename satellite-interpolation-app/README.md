@@ -1,36 +1,263 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fill the Frames
 
-## Getting Started
+AI-powered temporal interpolation platform for geostationary satellite imagery.
 
-First, run the development server:
+Fill the Frames generates intermediate satellite observations between existing frames, enabling enhanced temporal resolution for weather monitoring and Earth observation workflows.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Features
+
+* Upload NetCDF and HDF5 satellite products
+* Metadata inspection dashboard
+* Scientific visualization interface
+* AI-powered frame interpolation
+* Frame comparison tools
+* Quality metrics dashboard
+* Animation generation
+* Export generated outputs
+
+---
+
+## Tech Stack
+
+### Frontend
+
+* Next.js 15
+* TypeScript
+* Tailwind CSS v4
+* shadcn/ui
+* Framer Motion
+* Zustand
+* TanStack Query
+* Recharts
+* Plotly
+
+### Backend
+
+* FastAPI
+* Python 3.11+
+* Pydantic
+* Uvicorn
+
+### AI & Scientific Computing
+
+* PyTorch
+* Xarray
+* NetCDF4
+* NumPy
+* Rioxarray
+* SatPy
+
+### Evaluation
+
+* scikit-image
+* image-similarity-measures
+
+---
+
+## Project Structure
+
+```text
+src/
+│
+├── app/
+│
+├── components/
+│   ├── ui/
+│   ├── common/
+│   └── layout/
+│
+├── features/
+│   ├── upload/
+│   ├── metadata/
+│   ├── visualization/
+│   ├── interpolation/
+│   ├── comparison/
+│   ├── metrics/
+│   ├── animation/
+│   └── export/
+│
+├── hooks/
+├── providers/
+├── services/
+├── store/
+├── types/
+└── lib/
+
+backend/
+│
+├── api/
+├── preprocessing/
+├── inference/
+├── visualization/
+├── metrics/
+├── exports/
+├── models/
+└── utils/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Application Workflow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```text
+Upload
+   ↓
+Metadata Inspection
+   ↓
+Visualization
+   ↓
+Interpolation
+   ↓
+Comparison
+   ↓
+Metrics
+   ↓
+Animation
+   ↓
+Export
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Prerequisites
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Frontend
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+* Node.js 20+
+* pnpm
 
-## Deploy on Vercel
+### Backend
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+* Python 3.11+
+* CUDA-compatible GPU (recommended)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Frontend Setup
+
+Clone the repository:
+
+```bash
+git clone <repository-url>
+cd satellite-interpolation-app
+```
+
+Install dependencies:
+
+```bash
+pnpm install
+```
+
+Start development server:
+
+```bash
+pnpm dev
+```
+
+Application:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## Backend Setup
+
+Create virtual environment:
+
+```bash
+python -m venv venv
+```
+
+Activate environment:
+
+### Windows
+
+```bash
+venv\Scripts\activate
+```
+
+### Linux / macOS
+
+```bash
+source venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run backend:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+API:
+
+```text
+http://localhost:8000
+```
+
+---
+
+## Development Guidelines
+
+### Frontend
+
+* Use TypeScript only
+* Use App Router
+* Use shadcn/ui components
+* Prefer Server Components
+* Keep UI components reusable
+* Follow feature-based architecture
+
+### Backend
+
+* Use FastAPI routers
+* Use Pydantic schemas
+* Keep inference isolated from API routes
+* Preserve scientific metadata
+
+---
+
+## Environment Variables
+
+Frontend:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+Backend:
+
+```env
+MODEL_PATH=models/rife.pth
+CUDA_DEVICE=0
+```
+
+---
+
+## Future Roadmap
+
+* Real NetCDF ingestion
+* FastAPI integration
+* Modified RIFE inference
+* Scientific metrics engine
+* Multi-satellite support
+* Cloud deployment
+* Multi-GPU inference
+
+---
+
+## License
+
+Specify your project license here.
+
+---
+
