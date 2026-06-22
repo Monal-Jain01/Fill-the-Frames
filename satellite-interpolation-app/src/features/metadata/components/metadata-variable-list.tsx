@@ -6,7 +6,6 @@ import { MetadataCard } from './metadata-card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 interface MetadataVariableListProps {
   data: DetailedSatelliteMetadata;

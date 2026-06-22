@@ -47,7 +47,7 @@ export function MetadataTable<T>({ title, description, data, columns, keyExtract
                 <TableRow key={keyExtractor(item)}>
                   {columns.map((col) => (
                     <TableCell key={String(col.key)}>
-                      {col.render ? col.render(item) : String((item as any)[col.key] ?? '-')}
+                      {col.render ? col.render(item) : String((item as Record<string, unknown>)[col.key as string] ?? '-')}
                     </TableCell>
                   ))}
                 </TableRow>

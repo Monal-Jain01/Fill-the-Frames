@@ -8,10 +8,12 @@ import { useTheme } from 'next-themes';
 
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
+import type { PlotMouseEvent } from 'plotly.js';
+
 interface SatelliteViewerProps {
   data: MockImageData;
   colorMap: ColorMap;
-  onHover: (e: any) => void;
+  onHover: (e: Readonly<PlotMouseEvent>) => void;
   onUnhover: () => void;
 }
 

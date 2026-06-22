@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { PlotMouseEvent, PlotDatum } from 'plotly.js';
 import { VisualizationState, ColorMap, MockImageData, FrameType, PixelData } from '../types';
 import { VISUALIZATION_DEFAULTS } from '../constants';
 import { mockFrameData } from '../mock/data';
@@ -28,7 +29,7 @@ export function useVisualization() {
         // In the future, this would fetch specific frame type based on `frameType` state
         setData(mockFrameData);
         setState('ready');
-      } catch (err) {
+      } catch {
         setState('error');
       }
     };
@@ -38,13 +39,13 @@ export function useVisualization() {
 
   const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
 
-  const handleHover = (event: any) => {
+  const handleHover = (event: Readonly<PlotMouseEvent>) => {
     if (event.points && event.points[0]) {
-      const pt = event.points[0];
+      const pt = event.points[0] as PlotDatum & { z?: number };
       setPixelData({
-        x: pt.x,
-        y: pt.y,
-        value: pt.z,
+        x: pt.x as number,
+        y: pt.y as number,
+        value: pt.z !== undefined ? Number(pt.z) : null,
         colormapValue: null // We could map this using plotly config later if needed
       });
     }

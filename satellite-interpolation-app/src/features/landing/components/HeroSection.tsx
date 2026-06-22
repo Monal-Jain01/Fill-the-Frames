@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Satellite, ArrowRight, Activity, Globe } from 'lucide-react';
+import { ArrowRight, Activity, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 

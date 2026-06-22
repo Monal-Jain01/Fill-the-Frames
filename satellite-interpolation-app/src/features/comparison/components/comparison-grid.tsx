@@ -2,6 +2,8 @@ import React from 'react';
 import { ComparisonMode, ComparisonFrame } from '../types';
 import { ComparisonViewer } from './comparison-viewer';
 
+import type { Layout, PlotRelayoutEvent } from 'plotly.js';
+
 interface ComparisonGridProps {
   mode: ComparisonMode;
   frames: {
@@ -9,8 +11,8 @@ interface ComparisonGridProps {
     t1: ComparisonFrame;
     t05: ComparisonFrame;
   };
-  sharedLayout: any;
-  onRelayout: (eventData: any) => void;
+  sharedLayout: Partial<Layout>;
+  onRelayout: (eventData: Readonly<PlotRelayoutEvent>) => void;
   isFullscreen: boolean;
 }
 

@@ -33,7 +33,7 @@ export function formatDate(timestamp: string) {
       second: '2-digit',
       timeZoneName: 'short',
     }).format(date);
-  } catch (error) {
+  } catch {
     return timestamp;
   }
 }

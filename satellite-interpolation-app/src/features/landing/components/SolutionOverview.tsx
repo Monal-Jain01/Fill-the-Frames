@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Network, Layers, Maximize } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 
 export function SolutionOverview() {
   return (

@@ -1,0 +1,18 @@
+{
+    "models": [
+        {
+            "id": "rife-v4",
+            "type": "interpolation",
+            "engine": "pytorch",
+            "path": "rife/",
+            "status": "ready"
+        },
+        {
+            "id": "rife-onnx",
+            "type": "interpolation",
+            "engine": "onnx",
+            "path": "onnx/",
+            "status": "not_loaded"
+        }
+    ]
+}

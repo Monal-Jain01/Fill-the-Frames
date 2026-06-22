@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import type { Layout, PlotRelayoutEvent } from 'plotly.js';
 import { ComparisonFrame } from '../types';
 import { formatDate } from '@/features/metadata/utils/formatters';
 
@@ -9,8 +10,8 @@ const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
 interface ComparisonViewerProps {
   frame: ComparisonFrame;
-  sharedLayout: any;
-  onRelayout: (eventData: any) => void;
+  sharedLayout: Partial<Layout>;
+  onRelayout: (eventData: Readonly<PlotRelayoutEvent>) => void;
   colormap?: string;
   hideMetadata?: boolean;
 }
@@ -23,7 +24,7 @@ export function ComparisonViewer({
   hideMetadata = false
 }: ComparisonViewerProps) {
   
-  const layout = useMemo(() => ({
+  const layout: Partial<Layout> = useMemo(() => ({
     autosize: true,
     margin: { l: 20, r: 10, b: 20, t: 10, pad: 4 },
     paper_bgcolor: 'transparent',
@@ -32,21 +33,16 @@ export function ComparisonViewer({
       title: { text: '' }, 
       showgrid: false, 
       zeroline: false,
-      ...(sharedLayout['xaxis.range[0]'] !== undefined && {
-        range: [sharedLayout['xaxis.range[0]'], sharedLayout['xaxis.range[1]']]
-      }),
-      ...(sharedLayout['xaxis.autorange'] && { autorange: true })
+      ...(sharedLayout.xaxis || {})
     },
     yaxis: { 
       title: { text: '' }, 
       showgrid: false, 
       zeroline: false, 
-      ...(sharedLayout['yaxis.range[0]'] !== undefined ? {
-        range: [sharedLayout['yaxis.range[0]'], sharedLayout['yaxis.range[1]']]
-      } : { autorange: 'reversed' }),
-      ...(sharedLayout['yaxis.autorange'] && { autorange: 'reversed' })
+      autorange: 'reversed',
+      ...(sharedLayout.yaxis || {})
     },
-    dragmode: 'pan' as const,
+    dragmode: 'pan',
   }), [sharedLayout]);
 
   return (

@@ -57,7 +57,7 @@ export function useInterpolation() {
         completedAt: new Date().toISOString(),
       }));
 
-    } catch (error) {
+    } catch {
       setJobState(prev => ({
         ...prev,
         status: 'error',
