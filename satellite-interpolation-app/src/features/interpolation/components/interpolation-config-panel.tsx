@@ -44,7 +44,7 @@ export function InterpolationConfigPanel({ config, onConfigChange, disabled }: I
                 variant={config.timeRatio === ratio ? 'default' : 'outline'}
                 size="sm"
                 disabled={disabled}
-                onClick={() => onConfigChange({ timeRatio: ratio as any })}
+                onClick={() => onConfigChange({ timeRatio: ratio as never })}
                 className="w-16"
               >
                 {ratio.toFixed(2)}

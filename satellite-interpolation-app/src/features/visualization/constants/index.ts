@@ -1,6 +1,6 @@
 import { ColorMap } from '../types';
 
-export const COLOR_MAPS: Record<ColorMap, any> = {
+export const COLOR_MAPS: Record<ColorMap, unknown> = {
   Thermal: [
     [0.0, 'rgb(0,0,0)'],
     [0.2, 'rgb(0,0,255)'],

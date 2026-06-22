@@ -12,9 +12,8 @@ export function useMetadata(initialData?: DetailedSatelliteMetadata) {
 
   useEffect(() => {
     if (initialData) {
-      setData(initialData);
-      setState('ready');
-      return;
+      const timer = setTimeout(() => setData(initialData), 0);
+      return () => clearTimeout(timer);
     }
 
     // Simulate an async operation (e.g., parsing a NetCDF file or calling a backend API)
@@ -27,7 +26,7 @@ export function useMetadata(initialData?: DetailedSatelliteMetadata) {
         // In the future, this would check `useUploadStore.getState().selectedFileMetadata`
         setData(mockMetadata);
         setState('ready');
-      } catch (error) {
+      } catch {
         setState('error');
       }
     };
