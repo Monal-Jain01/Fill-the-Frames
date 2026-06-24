@@ -143,7 +143,6 @@ class VisualizationService:
     def get_map_layer_image(file_id: str, variable: str) -> io.BytesIO:
         """
         Converts the 2D scientific array into a transparent PNG for Map Overlay.
-        Replaces both get_frame and get_thumbnail_path to be faster.
         """
         file_path = VisualizationService._get_file_path(file_id)
         parser = None
@@ -196,3 +195,66 @@ class VisualizationService:
         finally:
             if parser is not None:
                 parser.close()
+
+    @staticmethod
+    def get_error_map_layer(actual_file_id: str, ai_file_id: str, variable: str) -> io.BytesIO:
+        """
+        Generates a Heatmap PNG showing the absolute difference between Ground Truth and AI Prediction.
+        """
+        actual_path = VisualizationService._get_file_path(actual_file_id)
+        ai_path = VisualizationService._get_file_path(ai_file_id)
+
+        parser_actual = None
+        parser_ai = None
+        try:
+            parser_actual = MetadataService.get_parser(actual_path)
+            parser_actual.load_dataset(actual_path)
+            VisualizationService.validate_variable(parser_actual, variable)
+            frame_actual = parser_actual.extract_time_slice(variable, 0)[::2, ::2]
+
+            parser_ai = MetadataService.get_parser(ai_path)
+            parser_ai.load_dataset(ai_path)
+            VisualizationService.validate_variable(parser_ai, variable)
+            frame_ai = parser_ai.extract_time_slice(variable, 0)[::2, ::2]
+
+            # 1. Validation masks
+            valid_mask_actual = ~np.isnan(frame_actual) & ~np.isinf(frame_actual) & (frame_actual > 50.0) & (frame_actual < 400.0)
+            valid_mask_ai = ~np.isnan(frame_ai) & ~np.isinf(frame_ai) & (frame_ai > 50.0) & (frame_ai < 400.0)
+            valid_mask = valid_mask_actual & valid_mask_ai  # Data valid in both
+
+            # 2. Calculate Absolute Error Map
+            error_matrix = np.zeros_like(frame_actual)
+            np.abs(frame_actual - frame_ai, out=error_matrix, where=valid_mask)
+
+            # 3. Normalize Error (Assuming 20 Kelvin difference is our max acceptable threshold)
+            MAX_ERROR = 20.0 
+            error_norm = np.clip(error_matrix / MAX_ERROR, 0, 1)
+
+            # 4. Create RGBA image mapping (Yellow -> Red gradient)
+            rgba_img = np.zeros((error_matrix.shape[0], error_matrix.shape[1], 4), dtype=np.uint8)
+            
+            rgba_img[..., 0] = 255  # Red is constant
+            rgba_img[..., 1] = (255 * (1 - error_norm)).astype(np.uint8)  # Green drops to 0 as error rises
+            rgba_img[..., 2] = 0    # No Blue
+            
+            # 5. Dynamic Transparency: Perfect match (0 error) is completely transparent. High error is opaque.
+            # Max opacity is set to 200 (so it doesn't completely block the map behind it)
+            opacity = (200 * error_norm).astype(np.uint8)
+            rgba_img[..., 3] = np.where(valid_mask, opacity, 0)
+
+            # Save and stream
+            img = Image.fromarray(rgba_img, mode="RGBA")
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format='PNG', optimize=True)
+            img_byte_arr.seek(0)
+
+            return img_byte_arr
+
+        except Exception as e:
+            logger.error(f"Error map generation failed: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to generate error map layer")
+        finally:
+            if parser_actual is not None:
+                parser_actual.close()
+            if parser_ai is not None:
+                parser_ai.close()
