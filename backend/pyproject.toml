@@ -18,7 +18,8 @@ dependencies = [
     "satpy>=0.60.0",
     "scikit-image>=0.26.0",
     "uvicorn>=0.49.0",
-    "scikit-image"
+    "scikit-image",
+    "pillow>=12.2.0",
 ]
 [tool.pyright]
 venvPath = "~/Projects/satellite_video_feed/"

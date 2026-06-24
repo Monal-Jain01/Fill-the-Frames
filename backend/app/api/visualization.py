@@ -1,17 +1,14 @@
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import FileResponse  # 🚨 NAYA IMPORT
+from fastapi.responses import StreamingResponse
 
 from app.schemas.common import ApiResponse
 from app.services.scientific.visualization_service import VisualizationService
 
 router = APIRouter()
 
-
 @router.get("/{file_id}/variables", response_model=ApiResponse)
 async def get_variables(file_id: str):
-    """
-    Get a list of available variables/channels in the uploaded dataset.
-    """
+    # ... (code same rahega) ...
     try:
         variables_data = VisualizationService.get_variables(file_id)
         return ApiResponse(
@@ -24,41 +21,65 @@ async def get_variables(file_id: str):
             success=False, message=f"Failed to retrieve variables: {str(e)}", data=None
         )
 
-
-@router.get("/{file_id}/frame", response_model=ApiResponse)
-async def get_frame(
-    file_id: str,
-    variable: str = Query(..., description="The variable to extract"),
-    time_index: int = Query(0, description="The time index to extract"),
+@router.get("/{file_id}/bounds", response_model=ApiResponse)
+async def get_map_bounds(
+    file_id: str, 
+    variable: str = Query("C13", description="The variable to extract bounds for")
 ):
-    """
-    Extract a 2D frame matrix for a specific variable and time index.
-    """
+    # ... (code same rahega) ...
     try:
-        frame_data = VisualizationService.get_frame(file_id, variable, time_index)
+        bounds_data = VisualizationService.get_map_bounds(file_id, variable)
         return ApiResponse(
             success=True,
-            message=f"Frame data for {variable} extracted successfully.",
-            data=frame_data.model_dump(),
+            message="Map bounds extracted successfully.",
+            data=bounds_data,
         )
     except Exception as e:
         return ApiResponse(
-            success=False, message=f"Failed to extract frame: {str(e)}", data=None
+            success=False, message=f"Failed to extract bounds: {str(e)}", data=None
         )
 
-
-# 🚨 RESPONSE MODEL HATA DIYA HAI AUR FILE RESPONSE BHEJ RAHE HAIN
-@router.get("/{file_id}/thumbnail")
-async def get_thumbnail(
-    file_id: str, variable: str = Query("C13", description="The variable to preview")
+# 🚨 FIX: Error map wale route ko upar move kar diya!
+@router.get("/error-map/layer")
+async def get_error_map_layer(
+    actual_file_id: str = Query(..., description="The File ID of the Ground Truth dataset"),
+    ai_file_id: str = Query(..., description="The File ID of the AI Generated dataset"),
+    variable: str = Query("C13", description="The variable to extract")
 ):
     """
-    Generate and return a JPEG thumbnail image for the dataset preview.
+    Generates a heatmap PNG comparing Ground Truth and AI prediction.
     """
     try:
-        thumb_path = VisualizationService.get_thumbnail_path(file_id, variable)
-        return FileResponse(path=thumb_path, media_type="image/jpeg")
-    except Exception as e:
-        return ApiResponse(
-            success=False, message=f"Failed to generate thumbnail: {str(e)}", data=None
+        img_buffer = VisualizationService.get_error_map_layer(actual_file_id, ai_file_id, variable)
+        return StreamingResponse(
+            img_buffer, 
+            media_type="image/png",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Content-Disposition": f"inline; filename=error_{actual_file_id}_{ai_file_id}.png"
+            } 
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Yeh dynamic route ab neeche aayega
+@router.get("/{file_id}/layer")
+async def get_map_layer(
+    file_id: str, 
+    variable: str = Query("C13", description="The variable to extract")
+):
+    """
+    Returns a fast, transparent PNG image overlay for Leaflet Map.
+    """
+    try:
+        img_buffer = VisualizationService.get_map_layer_image(file_id, variable)
+        return StreamingResponse(
+            img_buffer, 
+            media_type="image/png",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Content-Disposition": f"inline; filename={file_id}_{variable}.png"
+            } 
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
