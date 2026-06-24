@@ -1,19 +1,19 @@
 import React from 'react';
-import { FrameInfo } from '../types';
+import { FrameDataResponse } from '../types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Satellite, Clock, Maximize2, Layers } from 'lucide-react';
 import { formatDate } from '@/features/metadata/utils/formatters';
 
 interface VisualizationSummaryCardsProps {
-  info: FrameInfo;
+  data: FrameDataResponse;
 }
 
-export function VisualizationSummaryCards({ info }: VisualizationSummaryCardsProps) {
+export function VisualizationSummaryCards({ data }: VisualizationSummaryCardsProps) {
   const summaries = [
-    { label: 'Resolution', value: info.resolution, icon: <Maximize2 className="w-4 h-4 text-emerald-500" /> },
-    { label: 'Dimensions', value: `${info.dimensions[0]}x${info.dimensions[1]}`, icon: <Satellite className="w-4 h-4 text-blue-500" /> },
-    { label: 'Band', value: info.band, icon: <Layers className="w-4 h-4 text-purple-500" /> },
-    { label: 'Timestamp', value: formatDate(info.timestamp).split(',')[0], icon: <Clock className="w-4 h-4 text-amber-500" /> },
+    { label: 'Time Index', value: data.time_index.toString(), icon: <Maximize2 className="w-4 h-4 text-emerald-500" /> },
+    { label: 'Dimensions', value: `${data.shape[0]}x${data.shape[1]}`, icon: <Satellite className="w-4 h-4 text-blue-500" /> },
+    { label: 'Variable', value: data.variable, icon: <Layers className="w-4 h-4 text-purple-500" /> },
+    { label: 'Timestamp', value: data.timestamp ? formatDate(data.timestamp).split(',')[0] : 'N/A', icon: <Clock className="w-4 h-4 text-amber-500" /> },
   ];
 
   return (

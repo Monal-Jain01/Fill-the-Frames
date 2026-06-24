@@ -10,56 +10,74 @@ import { InterpolationTimeline } from './interpolation-timeline';
 import { InterpolationStatus } from './interpolation-status';
 import { InterpolationResultPreview } from './interpolation-result-preview';
 import { Button } from '@/components/ui/button';
+import { useMetadata } from '@/features/metadata/hooks/use-metadata';
+import { MetadataResponse } from '@/features/metadata/types';
+import { MetadataSummary } from '@/features/metadata/components/metadata-summary';
+import { MetadataVariableList } from '@/features/metadata/components/metadata-variable-list';
+import { Loader2 } from 'lucide-react';
 import { useInterpolation } from '../hooks/use-interpolation';
-import { DetailedSatelliteMetadata } from '@/features/metadata/types';
-
-const dummyMetadata = {
-  id: 'dummy',
-  timestamp: new Date().toISOString(),
-  satelliteId: 'INSAT-3D',
-  productType: 'L1B',
-  processingLevel: 'L1',
-  spatialResolution: '1km',
-  bandName: 'TIR1',
-  centralWavelength: '10.8um',
-  projection: 'Mercator',
-  bounds: [0, 0, 0, 0],
-  fileSize: 0,
-  dimensions: [],
-  variables: [],
-  coordinates: []
-} as unknown as DetailedSatelliteMetadata;
 
 export function InterpolationWorkflowWrapper() {
   const store = useInterpolationStore();
   const { startInterpolation } = useInterpolation();
+  const { fetchInterpolationMetadata } = useMetadata();
 
-  const handleT0Upload = () => {
-    store.setInputFrame('t0', { 
-      id: 't0_mock_id', 
-      filename: 'T0_NetCDF.nc',
-      timestamp: new Date().toISOString(),
-      resolution: 'Mock',
-      dimensions: [0, 0],
-      data: [],
-      min: 0,
-      max: 0
+  React.useEffect(() => {
+    if (store.status === 'completed' && store.currentStep === 5) {
+      store.nextStep();
+    }
+  }, [store.status, store.currentStep, store]);
+
+  const handleT0Upload = async (fileId: string, filename: string) => {
+    store.setUploadState({
+      t0FileId: fileId,
+      t0Filename: filename,
     });
+
     store.nextStep();
+    await fetchInterpolationMetadata(fileId, 't0');
   };
 
-  const handleT1Upload = () => {
-    store.setInputFrame('t1', { 
-      id: 't1_mock_id', 
-      filename: 'T1_NetCDF.nc',
-      timestamp: new Date().toISOString(),
-      resolution: 'Mock',
-      dimensions: [0, 0],
-      data: [],
-      min: 0,
-      max: 0
+  const handleT1Upload = async (fileId: string, filename: string) => {
+    store.setUploadState({
+      t1FileId: fileId,
+      t1Filename: filename,
     });
+
     store.nextStep();
+    await fetchInterpolationMetadata(fileId, 't1');
+  };
+
+  const renderMetadata = (metadata: MetadataResponse | null, type: 'T0' | 'T1') => {
+    if (store.metadataLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+          <Loader2 className="w-8 h-8 animate-spin mb-4" />
+          <p>Extracting metadata...</p>
+        </div>
+      );
+    }
+    
+    if (store.metadataError) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 text-destructive">
+          <p>Error extracting metadata: {store.metadataError}</p>
+        </div>
+      );
+    }
+
+    if (!metadata) return null;
+
+    return (
+      <div className="space-y-6">
+        <MetadataOverview data={metadata} />
+        <MetadataSummary data={metadata} />
+        <MetadataVariableList data={metadata} />
+        <div className="flex justify-center pt-4">
+          <Button onClick={store.nextStep}>Proceed to {type === 'T0' ? 'T1 Upload' : 'Configuration'}</Button>
+        </div>
+      </div>
+    );
   };
 
   const steps: Step[] = [
@@ -77,14 +95,7 @@ export function InterpolationWorkflowWrapper() {
       id: 2,
       label: 'Review T0',
       description: 'Review T0 Metadata',
-      component: (
-        <div className="space-y-6">
-          <MetadataOverview data={dummyMetadata} />
-          <div className="flex justify-center pt-4">
-            <Button onClick={store.nextStep}>Proceed to T1 Upload</Button>
-          </div>
-        </div>
-      ),
+      component: renderMetadata(store.t0Metadata, 'T0'),
     },
     {
       id: 3,
@@ -100,14 +111,7 @@ export function InterpolationWorkflowWrapper() {
       id: 4,
       label: 'Review T1',
       description: 'Review T1 Metadata',
-      component: (
-        <div className="space-y-6">
-          <MetadataOverview data={dummyMetadata} />
-          <div className="flex justify-center pt-4">
-            <Button onClick={store.nextStep}>Proceed to Configuration</Button>
-          </div>
-        </div>
-      ),
+      component: renderMetadata(store.t1Metadata, 'T1'),
     },
     {
       id: 5,
@@ -122,11 +126,7 @@ export function InterpolationWorkflowWrapper() {
           <div className="flex justify-center pt-4">
             <Button 
               size="lg" 
-              onClick={() => {
-                startInterpolation();
-                // Simulate processing delay for demo
-                setTimeout(() => store.nextStep(), 3000);
-              }}
+              onClick={() => startInterpolation()}
               disabled={store.status === 'processing'}
               className="w-48 font-semibold shadow-lg"
             >

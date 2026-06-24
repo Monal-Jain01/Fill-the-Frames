@@ -2,14 +2,19 @@ import { ApiResponse } from "@/types/api";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://sid385-fill-the-frames.hf.space/api/v1";
 
-export const apiClient = {
-  uploadFile: async (file: File): Promise<ApiResponse> => {
+export interface UploadResponse {
+  file_id: string;
+  filename: string;
+  status: string;
+}
+
+export const uploadClient = {
+  uploadFile: async (file: File): Promise<ApiResponse<UploadResponse>> => {
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch(`${BASE_URL}/upload/`, {
       method: "POST",
-      // Agar space private hai toh uncomment karo:
       // headers: { "Authorization": `Bearer ${process.env.NEXT_PUBLIC_HF_TOKEN}` },
       body: formData,
     });
@@ -19,12 +24,5 @@ export const apiClient = {
     }
 
     return response.json();
-  },
-
-  /**
-   * @deprecated Moved to interpolation-client.ts
-   */
-  generateInterpolation: async (): Promise<ApiResponse> => {
-    throw new Error("apiClient.generateInterpolation is deprecated. Use interpolationClient.generateInterpolation instead.");
   },
 };

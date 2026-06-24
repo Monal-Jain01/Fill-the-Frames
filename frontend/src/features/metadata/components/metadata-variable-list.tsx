@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from 'react';
-import { DetailedSatelliteMetadata, VariableDetail } from '../types';
+import { MetadataResponse, VariableInfo } from '../types';
 import { MetadataCard } from './metadata-card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface MetadataVariableListProps {
-  data: DetailedSatelliteMetadata;
+  data: MetadataResponse;
 }
 
 export function MetadataVariableList({ data }: MetadataVariableListProps) {
@@ -23,7 +23,7 @@ export function MetadataVariableList({ data }: MetadataVariableListProps) {
   );
 }
 
-function VariableItem({ variable }: { variable: VariableDetail }) {
+function VariableItem({ variable }: { variable: VariableInfo }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -34,14 +34,14 @@ function VariableItem({ variable }: { variable: VariableDetail }) {
       >
         <div className="flex items-center gap-3">
           <span className="font-semibold text-base">{variable.name}</span>
-          <Badge variant="outline">{variable.dtype}</Badge>
+          <Badge variant="outline">{variable.datatype}</Badge>
           <span className="text-sm text-muted-foreground hidden sm:inline-block">
             {variable.dimensions.join(', ')}
           </span>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground hidden md:inline-block">
-            {variable.attributes.long_name || ''}
+            {String(variable.attributes.long_name || '')}
           </span>
           {isExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
         </div>
@@ -74,15 +74,11 @@ function VariableItem({ variable }: { variable: VariableDetail }) {
                 <dl className="space-y-2 text-sm">
                   <div className="grid grid-cols-3 gap-2">
                     <dt className="font-medium">Min:</dt>
-                    <dd className="col-span-2 text-muted-foreground">{variable.min ?? 'N/A'}</dd>
+                    <dd className="col-span-2 text-muted-foreground">{variable.min_value ?? 'N/A'}</dd>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <dt className="font-medium">Max:</dt>
-                    <dd className="col-span-2 text-muted-foreground">{variable.max ?? 'N/A'}</dd>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <dt className="font-medium">Mean:</dt>
-                    <dd className="col-span-2 text-muted-foreground">{variable.mean ?? 'N/A'}</dd>
+                    <dd className="col-span-2 text-muted-foreground">{variable.max_value ?? 'N/A'}</dd>
                   </div>
                 </dl>
               </div>

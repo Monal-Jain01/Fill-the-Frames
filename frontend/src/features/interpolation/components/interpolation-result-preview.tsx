@@ -1,21 +1,19 @@
 "use client";
 
 import React from 'react';
-import dynamic from 'next/dynamic';
 import { InterpolationJobState } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useVisualization } from '@/features/visualization/hooks/use-visualization';
+import { SatelliteViewer } from '@/features/visualization/components/satellite-viewer';
+import { Loader2 } from 'lucide-react';
 import { formatDate } from '@/features/metadata/utils/formatters';
-
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
 interface InterpolationResultPreviewProps {
   jobState: InterpolationJobState;
 }
 
 export function InterpolationResultPreview({ jobState }: InterpolationResultPreviewProps) {
-  if (jobState.status !== 'completed' || !jobState.outputFrame) return null;
-
-  const frame = jobState.outputFrame;
+  if (jobState.status !== 'completed' || !jobState.outputFileId) return null;
 
   return (
     <Card className="overflow-hidden border-primary/50 shadow-md">
@@ -27,55 +25,64 @@ export function InterpolationResultPreview({ jobState }: InterpolationResultPrev
       </CardHeader>
       <CardContent className="p-0">
         <div className="grid grid-cols-1 md:grid-cols-4 min-h-[400px]">
-          <div className="md:col-span-3 border-r p-4 bg-background">
-            <div className="w-full h-full min-h-[300px] md:min-h-[400px] border rounded overflow-hidden">
-              <Plot
-                data={[
-                  {
-                    z: frame.data,
-                    type: 'heatmap',
-                    colorscale: 'Inferno',
-                    zmin: frame.min,
-                    zmax: frame.max,
-                    showscale: true,
-                  }
-                ]}
-                layout={{
-                  autosize: true,
-                  margin: { l: 20, r: 10, b: 20, t: 10 },
-                  paper_bgcolor: 'transparent',
-                  plot_bgcolor: 'transparent',
-                  xaxis: { title: { text: '' }, showgrid: false, zeroline: false },
-                  yaxis: { title: { text: '' }, showgrid: false, zeroline: false, autorange: 'reversed' },
-                }}
-                useResizeHandler={true}
-                style={{ width: '100%', height: '100%' }}
-                config={{ displayModeBar: false, responsive: true }}
-              />
-            </div>
+          <div className="md:col-span-3 border-r bg-background">
+            <PreviewWrapper fileId={jobState.outputFileId} />
           </div>
           
           <div className="p-6 flex flex-col gap-6 bg-muted/10">
-            <h4 className="font-semibold text-sm border-b pb-2">Output Metadata</h4>
+            <h4 className="font-semibold text-sm border-b pb-2">Output Info</h4>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Generated Timestamp</span>
-              <span className="text-sm font-medium">{formatDate(frame.timestamp)}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Completed At</span>
+              <span className="text-sm font-medium">{jobState.completedAt ? formatDate(jobState.completedAt) : 'N/A'}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground uppercase tracking-wider">Interpolation Ratio</span>
               <span className="text-sm font-medium">{jobState.config.timeRatio.toFixed(2)}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Frame Type</span>
-              <span className="text-sm font-medium text-primary">T0.5</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Variable Generated</span>
+              <span className="text-sm font-medium">{jobState.config.variable || 'C13'}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Dimensions</span>
-              <span className="text-sm font-medium">{frame.dimensions.join(' × ')}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Frame Type</span>
+              <span className="text-sm font-medium text-primary">T0.5</span>
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Separate wrapper component to use the visualization hook cleanly
+function PreviewWrapper({ fileId }: { fileId: string }) {
+  const vis = useVisualization(fileId);
+
+  if (vis.state === 'loading') {
+    return (
+      <div className="w-full h-full min-h-[400px] flex flex-col items-center justify-center text-muted-foreground">
+        <Loader2 className="w-8 h-8 animate-spin mb-4" />
+        <p>Loading generated frame visualization...</p>
+      </div>
+    );
+  }
+
+  if (vis.state === 'error' || !vis.data) {
+    return (
+      <div className="w-full h-full min-h-[400px] flex items-center justify-center p-4">
+        <p className="text-destructive">Failed to load frame visualization.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full min-h-[400px] relative">
+      <SatelliteViewer 
+        data={vis.data}
+        colorMap={vis.colorMap}
+        onHover={vis.handleHover}
+        onUnhover={vis.handleUnhover}
+      />
+    </div>
   );
 }

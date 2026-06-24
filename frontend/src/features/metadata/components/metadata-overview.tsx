@@ -1,22 +1,21 @@
 import React from 'react';
-import { DetailedSatelliteMetadata } from '../types';
+import { MetadataResponse } from '../types';
 import { MetadataCard } from './metadata-card';
 import { formatBytes, formatDate } from '../utils/formatters';
 
 interface MetadataOverviewProps {
-  data: DetailedSatelliteMetadata;
+  data: MetadataResponse;
 }
 
 export function MetadataOverview({ data }: MetadataOverviewProps) {
   const details = [
-    { label: 'File ID', value: data.id },
-    { label: 'Satellite', value: data.name },
-    { label: 'Sensor', value: data.sensor },
-    { label: 'Timestamp', value: formatDate(data.timestamp) },
-    { label: 'Resolution', value: data.resolution },
-    { label: 'File Size', value: formatBytes(data.fileSize) },
-    { label: 'Coordinate System', value: data.crs },
-    { label: 'Bounding Box', value: `[${data.boundingBox.join(', ')}]` },
+    { label: 'File ID', value: data.file_id },
+    { label: 'Filename', value: data.filename },
+    { label: 'Format', value: data.format },
+    { label: 'Start Time', value: data.temporal_info?.start_time ? formatDate(data.temporal_info.start_time) : 'N/A' },
+    { label: 'End Time', value: data.temporal_info?.end_time ? formatDate(data.temporal_info.end_time) : 'N/A' },
+    { label: 'File Size', value: formatBytes(data.size) },
+    { label: 'Projection', value: data.coordinates?.projection || 'Unknown' },
   ];
 
   return (

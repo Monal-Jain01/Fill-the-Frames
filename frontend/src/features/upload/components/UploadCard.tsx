@@ -1,6 +1,6 @@
 'use client';
 
-import { UploadFile, useUploadStore } from '@/store/upload-store';
+import { UploadFile } from '@/store/upload-store';
 import { File, AlertCircle, CheckCircle2, Play, X, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,9 @@ import { UploadProgress } from './UploadProgress';
 
 export function UploadCard({ fileData }: { fileData: UploadFile }) {
   // 🚨 FIX: simulateUpload ki jagah uploadFileToServer use kar rahe hain
-  const { removeFile, uploadFileToServer } = useUploadStore();
+  // const { removeFile, uploadFileToServer } = useUploadStore();
+  const removeFile = (id: string) => {};
+  const uploadFileToServer = (id: string) => {};
   const { file, status, progress, error, fileType } = fileData;
   const fileSize = (file.size / (1024 * 1024)).toFixed(2);
 

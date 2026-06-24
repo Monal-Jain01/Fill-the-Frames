@@ -1,6 +1,6 @@
-import { DetailedSatelliteMetadata } from '../types';
+// import { DetailedSatelliteMetadata } from '../types';
 
-export const mockMetadata: DetailedSatelliteMetadata = {
+export const mockMetadata: Record<string, unknown> = {
   id: 'insat3dr-img-20230514t0800',
   name: 'INSAT-3DR Imager',
   sensor: 'Imager',

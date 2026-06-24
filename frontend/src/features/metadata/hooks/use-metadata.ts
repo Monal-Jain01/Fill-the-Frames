@@ -1,41 +1,64 @@
-import { useState, useEffect } from 'react';
-import { DetailedSatelliteMetadata, MetadataState } from '../types';
-import { mockMetadata } from '../mock/data';
+import { useCallback } from "react";
+import { metadataClient } from "@/lib/api/metadata-client";
+import { useInterpolationStore } from "@/store/interpolation-store";
+import { useValidationStore } from "@/store/validation-store";
 
-/**
- * Hook to manage metadata state and fetching.
- * Currently returns mock data, but designed to connect to global stores or APIs in the future.
- */
-export function useMetadata(initialData?: DetailedSatelliteMetadata) {
-  const [data, setData] = useState<DetailedSatelliteMetadata | null>(initialData || null);
-  const [state, setState] = useState<MetadataState>(initialData ? 'ready' : 'loading');
+export function useMetadata() {
+  const interpolationStore = useInterpolationStore();
+  const validationStore = useValidationStore();
 
-  useEffect(() => {
-    if (initialData) {
-      const timer = setTimeout(() => setData(initialData), 0);
-      return () => clearTimeout(timer);
-    }
-
-    // Simulate an async operation (e.g., parsing a NetCDF file or calling a backend API)
-    const loadMetadata = async () => {
+  const fetchInterpolationMetadata = useCallback(
+    async (fileId: string, type: "t0" | "t1") => {
+      interpolationStore.setMetadataState({ metadataLoading: true, metadataError: null });
       try {
-        setState('loading');
-        // Simulated delay
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // In the future, this would check `useUploadStore.getState().selectedFileMetadata`
-        setData(mockMetadata);
-        setState('ready');
-      } catch {
-        setState('error');
+        const response = await metadataClient.getMetadata(fileId);
+        if (response.success && response.data) {
+          if (type === "t0") {
+            interpolationStore.setMetadataState({ t0Metadata: response.data, metadataLoading: false });
+          } else {
+            interpolationStore.setMetadataState({ t1Metadata: response.data, metadataLoading: false });
+          }
+        } else {
+          interpolationStore.setMetadataState({ 
+            metadataError: response.message || "Failed to fetch metadata",
+            metadataLoading: false 
+          });
+        }
+      } catch (err: unknown) {
+        interpolationStore.setMetadataState({ 
+          metadataError: err instanceof Error ? err.message : "An unexpected error occurred",
+          metadataLoading: false 
+        });
       }
-    };
+    },
+    [interpolationStore]
+  );
 
-    loadMetadata();
-  }, [initialData]);
+  const fetchValidationMetadata = useCallback(
+    async (fileId: string) => {
+      validationStore.setMetadataState({ metadataLoading: true, metadataError: null });
+      try {
+        const response = await metadataClient.getMetadata(fileId);
+        if (response.success && response.data) {
+          validationStore.setMetadataState({ groundTruthMetadata: response.data, metadataLoading: false });
+        } else {
+          validationStore.setMetadataState({ 
+            metadataError: response.message || "Failed to fetch metadata",
+            metadataLoading: false 
+          });
+        }
+      } catch (err: unknown) {
+        validationStore.setMetadataState({ 
+          metadataError: err instanceof Error ? err.message : "An unexpected error occurred",
+          metadataLoading: false 
+        });
+      }
+    },
+    [validationStore]
+  );
 
   return {
-    data,
-    state,
+    fetchInterpolationMetadata,
+    fetchValidationMetadata,
   };
 }

@@ -10,25 +10,12 @@ import { DifferenceMapViewer } from '@/features/comparison/components/difference
 import { MetricsDashboard } from '@/features/metrics/components/metrics-dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DetailedSatelliteMetadata } from '@/features/metadata/types';
 import { DifferenceMapData } from '@/features/comparison/types';
 
-const dummyMetadata = {
-  id: 'dummy',
-  timestamp: new Date().toISOString(),
-  satelliteId: 'INSAT-3D',
-  productType: 'L1B',
-  processingLevel: 'L1',
-  spatialResolution: '1km',
-  bandName: 'TIR1',
-  centralWavelength: '10.8um',
-  projection: 'Mercator',
-  bounds: [0, 0, 0, 0],
-  fileSize: 0,
-  dimensions: [],
-  variables: [],
-  coordinates: []
-} as unknown as DetailedSatelliteMetadata;
+import { useMetadata } from '@/features/metadata/hooks/use-metadata';
+import { MetadataSummary } from '@/features/metadata/components/metadata-summary';
+import { MetadataVariableList } from '@/features/metadata/components/metadata-variable-list';
+import { Loader2 } from 'lucide-react';
 
 const dummyDifferenceMap: DifferenceMapData = {
   id: 'dummy',
@@ -48,17 +35,53 @@ const dummyDifferenceMap: DifferenceMapData = {
 };
 
 export function ValidationWorkflowWrapper() {
-  const { currentStep, nextStep, prevStep, setArtifactId } = useValidationStore();
+  const store = useValidationStore();
+  const { currentStep, nextStep, prevStep, setArtifactId, setGroundTruthFileId, setGroundTruthFilename } = store;
   const [tempArtifactId, setTempArtifactId] = useState('');
+  const { fetchValidationMetadata } = useMetadata();
 
   const handleArtifactLoad = () => {
     setArtifactId(tempArtifactId);
     nextStep();
   };
 
-  const handleGroundTruthUpload = () => {
-    // Mock upload success
+  const handleGroundTruthUpload = async (fileId: string, filename: string) => {
+    setGroundTruthFileId(fileId);
+    setGroundTruthFilename(filename);
     nextStep();
+    await fetchValidationMetadata(fileId);
+  };
+
+  const renderMetadata = () => {
+    if (store.metadataLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+          <Loader2 className="w-8 h-8 animate-spin mb-4" />
+          <p>Extracting metadata...</p>
+        </div>
+      );
+    }
+    
+    if (store.metadataError) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 text-destructive">
+          <p>Error extracting metadata: {store.metadataError}</p>
+        </div>
+      );
+    }
+
+    if (!store.groundTruthMetadata) return null;
+
+    return (
+      <div className="space-y-6">
+        <MetadataOverview data={store.groundTruthMetadata} />
+        <MetadataSummary data={store.groundTruthMetadata} />
+        <MetadataVariableList data={store.groundTruthMetadata} />
+        <div className="flex justify-center pt-4">
+          <Button onClick={nextStep}>Proceed to Visual Inspection</Button>
+        </div>
+      </div>
+    );
   };
 
   const steps: Step[] = [
@@ -98,14 +121,7 @@ export function ValidationWorkflowWrapper() {
       id: 3,
       label: 'Metadata',
       description: 'Review Observation',
-      component: (
-        <div className="space-y-6">
-          <MetadataOverview data={dummyMetadata} />
-          <div className="flex justify-center pt-4">
-            <Button onClick={nextStep}>Proceed to Visual Inspection</Button>
-          </div>
-        </div>
-      ),
+      component: renderMetadata(),
     },
     {
       id: 4,

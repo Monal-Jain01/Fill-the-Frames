@@ -1,11 +1,13 @@
 import { useRef, useEffect } from 'react';
 import { useInterpolationStore } from '@/store/interpolation-store';
-import { apiClient } from '@/lib/api-client';
+import { useValidationStore } from '@/store/validation-store';
+import { interpolationClient } from '@/lib/api/interpolation-client';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://sid385-fill-the-frames.hf.space/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
 export function useInterpolation() {
   const store = useInterpolationStore();
+  const validationStore = useValidationStore();
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
@@ -17,8 +19,8 @@ export function useInterpolation() {
   }, []);
 
   const startInterpolation = async () => {
-    const t0Id = store.inputFrames.t0?.id; 
-    const t1Id = store.inputFrames.t1?.id;
+    const t0Id = store.t0FileId;
+    const t1Id = store.t1FileId;
 
     if (!t0Id || !t1Id) {
       alert("Please upload both T0 and T1 frames before interpolating.");
@@ -29,12 +31,12 @@ export function useInterpolation() {
       status: 'preparing',
       progress: 0,
       startedAt: new Date().toISOString(),
-      outputFrame: null,
+      outputFileId: null,
       error: undefined,
     });
 
     try {
-      const res = await apiClient.generateInterpolation(t0Id, t1Id, store.config.variable || "C13");
+      const res = await interpolationClient.generateInterpolation(t0Id, t1Id, store.config.variable || "C13");
       
       if (!res.success) throw new Error(res.message);
 
@@ -63,18 +65,13 @@ export function useInterpolation() {
         if (data.status === 'completed' || data.status === 'failed') {
           if (data.status === 'completed') {
             store.setJobState({
-              outputFrame: {
-                id: data.result_file_id,
-                filename: 'Generated_T0.5.nc',
-                timestamp: new Date().toISOString(),
-                resolution: 'Pending',
-                dimensions: [0, 0],
-                data: [],
-                min: 0,
-                max: 0
-              },
+              outputFileId: data.result_file_id,
               completedAt: new Date().toISOString()
             });
+            // Propagate to validation store
+            if (data.result_file_id) {
+              validationStore.setArtifactId(data.result_file_id);
+            }
           }
           eventSource.close();
         }
