@@ -113,8 +113,19 @@ class VisualizationService:
                 return {"bounds": [[8.0, 68.0], [37.0, 97.0]]}
             
             lons, lats = area.get_lonlats()
-            south, north = float(np.nanmin(lats)), float(np.nanmax(lats))
-            west, east = float(np.nanmin(lons)), float(np.nanmax(lons))
+            
+            # FIX: Filter out deep space Infinity and NaN values
+            valid_mask = ~np.isnan(lats) & ~np.isnan(lons) & ~np.isinf(lats) & ~np.isinf(lons)
+            
+            valid_lats = lats[valid_mask]
+            valid_lons = lons[valid_mask]
+
+            if len(valid_lats) > 0:
+                south, north = float(np.min(valid_lats)), float(np.max(valid_lats))
+                west, east = float(np.min(valid_lons)), float(np.max(valid_lons))
+            else:
+                # Fallback agar data me kuch gadbad ho
+                south, north, west, east = 8.0, 37.0, 68.0, 97.0
             
             return {
                 "bounds": [[south, west], [north, east]]
@@ -147,16 +158,16 @@ class VisualizationService:
             # Downsample optimization for extremely fast web renders
             frame = frame[::2, ::2]
 
-            # 1. Identify valid data vs empty space/NaNs
-            valid_mask = ~np.isnan(frame) & ~np.isinf(frame)
+            # FIX: Brightness temperature > 50 and < 400. Eliminates space fill-values (-9999, 0, etc.)
+            valid_mask = ~np.isnan(frame) & ~np.isinf(frame) & (frame > 50.0) & (frame < 400.0)
             frame_clean = np.where(valid_mask, frame, 90.0)
 
-            # 2. Normalize Brightness Temperature to 0-255 range
+            # Normalize Brightness Temperature to 0-255 range
             MIN_BT = 90.0
             MAX_BT = 313.0
             frame_norm = np.clip((frame_clean - MIN_BT) / (MAX_BT - MIN_BT) * 255, 0, 255).astype(np.uint8)
 
-            # 3. Create RGBA image matrix (A stands for Alpha/Transparency)
+            # Create RGBA image matrix (A stands for Alpha/Transparency)
             rgba_img = np.zeros((frame_norm.shape[0], frame_norm.shape[1], 4), dtype=np.uint8)
             
             # Grayscale mapping
@@ -164,13 +175,13 @@ class VisualizationService:
             rgba_img[..., 1] = frame_norm  # Green
             rgba_img[..., 2] = frame_norm  # Blue
             
-            # 4. Make NaNs and empty space completely transparent (0 opacity)
+            # Make NaNs and empty space completely transparent (0 opacity)
             rgba_img[..., 3] = np.where(valid_mask, 255, 0) 
 
-            # 5. Convert array to PIL Image
+            # Convert array to PIL Image
             img = Image.fromarray(rgba_img, mode="RGBA")
 
-            # 6. Save to in-memory byte buffer
+            # Save to in-memory byte buffer
             img_byte_arr = io.BytesIO()
             img.save(img_byte_arr, format='PNG', optimize=True)
             img_byte_arr.seek(0)
