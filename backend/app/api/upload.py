@@ -14,8 +14,7 @@ router = APIRouter()
 # Initialize Hugging Face File System
 fs = HfFileSystem(token=HF_TOKEN)
 
-# 🚨 FIX: Double routing add ki gayi hai trailing slash error se bachne ke liye
-@router.post("", response_model=ApiResponse)
+# 🚨 FIX: Do add ki gayi hai trailing slash error se bachne ke liye
 @router.post("/", response_model=ApiResponse)
 async def upload_file(file: UploadFile = File(...)):
     """
@@ -58,7 +57,6 @@ async def upload_multiple_files(files: List[UploadFile] = File(...)):
 
 
 # 🚨 FIX: Double routing yahan bhi
-@router.get("", response_model=ApiResponse)
 @router.get("/", response_model=ApiResponse)
 async def list_uploaded_files():
     """
