@@ -19,4 +19,4 @@ HF_BUCKET_ID: str = config("HF_BUCKET_ID", cast=str, default="YourUsername/satel
 TEMP_STORAGE_DIR: str = config("TEMP_STORAGE_DIR", cast=str, default="/tmp/satellite_cache")
 
 MODEL_DIR: str = config("MODEL_DIR", cast=str, default="models")
-DEFAULT_MODEL_PATH: str = config("DEFAULT_MODEL_PATH", cast=str, default="models/ifnet_satellite_512.onnx")
+DEFAULT_MODEL_PATH: str = config("DEFAULT_MODEL_PATH", cast=str, default="models/2month_model.onnx")
