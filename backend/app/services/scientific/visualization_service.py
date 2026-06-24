@@ -3,40 +3,58 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import matplotlib.pyplot as plt  # 🚨 NAYA IMPORT
+import matplotlib.pyplot as plt
 import numpy as np
 from fastapi import HTTPException
+from huggingface_hub import HfFileSystem
 
-from app.core.config import UPLOAD_DIR  # Config se path import kiya
-from app.schemas.visualization import (
-    FrameDataResponse,
-    FrameStatistics,
-    VariableMetadata,
-    VariablesResponse,
-)
+# 🚨 UPLOAD_DIR is completely removed. Using HF configs and Temp Storage.
+from app.core.config import HF_BUCKET_ID, HF_TOKEN, TEMP_STORAGE_DIR
+from app.schemas.visualization import (FrameDataResponse, FrameStatistics,
+                                       VariableMetadata, VariablesResponse)
 from app.services.scientific.metadata_service import MetadataService
 
 logger = logging.getLogger(__name__)
+
+# Initialize the Hugging Face File System globally for this service
+fs = HfFileSystem(token=HF_TOKEN)
 
 
 class VisualizationService:
 
     @staticmethod
     def _get_file_path(file_id: str) -> str:
-        # UUID folder wale system se file uthani hai
-        target_dir = Path(UPLOAD_DIR) / file_id
+        """
+        Smart fetcher: Checks local serverless cache first, otherwise downloads from HF Bucket.
+        """
+        local_cache_dir = Path(TEMP_STORAGE_DIR) / file_id
+        local_cache_dir.mkdir(parents=True, exist_ok=True)
 
-        if not target_dir.exists() or not target_dir.is_dir():
-            raise HTTPException(status_code=404, detail="File directory not found")
+        remote_dir = f"hf://buckets/{HF_BUCKET_ID}/{file_id}"
 
-        # Folder ke andar jo bhi file (jaise .nc ya .h5) ho usko utha lo
-        files = list(target_dir.glob("*.*"))
-        if not files:
-            raise HTTPException(
-                status_code=404, detail="File not found inside the directory"
-            )
+        try:
+            # Check Hugging Face Bucket for files in this UUID folder
+            remote_files = fs.glob(f"{remote_dir}/*")
+            if not remote_files:
+                raise HTTPException(status_code=404, detail="File not found in Hugging Face Bucket")
 
-        return str(files[0])
+            # Extract filename from remote path
+            remote_file_path = remote_files[0]
+            filename = Path(remote_file_path).name
+            local_file_path = local_cache_dir / filename
+
+            # Download from Bucket ONLY if it's not already in our temp cache
+            if not local_file_path.exists():
+                logger.info(f"Downloading {filename} from Hugging Face to local cache...")
+                fs.get(remote_file_path, str(local_file_path))
+
+            return str(local_file_path)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to fetch file from bucket: {str(e)}")
+            raise HTTPException(status_code=500, detail="Cloud storage retrieval failed")
 
     @staticmethod
     def get_variables(file_id: str) -> VariablesResponse:
@@ -155,15 +173,14 @@ class VisualizationService:
             if parser is not None:
                 parser.close()
 
-    # 🚨 NAYA METHOD PHASE 4 KE LIYE
     @staticmethod
     def get_thumbnail_path(file_id: str, variable: str) -> str:
         """
-        File se data nikal kar JPEG image banata hai, aur path return karta hai.
+        File se data nikal kar JPEG image banata hai, aur serverless cache me path return karta hai.
         """
-        target_dir = Path(UPLOAD_DIR) / file_id
-        if not target_dir.exists():
-            raise HTTPException(status_code=404, detail="File directory not found")
+        # 🚨 Cache logic updated for Serverless TEMP_STORAGE_DIR
+        target_dir = Path(TEMP_STORAGE_DIR) / file_id
+        target_dir.mkdir(parents=True, exist_ok=True)
 
         thumb_path = target_dir / f"thumb_{variable}.jpg"
 
@@ -171,6 +188,7 @@ class VisualizationService:
         if thumb_path.exists():
             return str(thumb_path)
 
+        # File path fetch karo (Yeh check karega ki file locally cached hai ya HF se lani hai)
         file_path = VisualizationService._get_file_path(file_id)
 
         parser = None
@@ -185,7 +203,7 @@ class VisualizationService:
             # Downsample for Speed (fast processing)
             frame_small = frame[::5, ::5]
 
-            # Image banao aur disk par save karo
+            # Image banao aur serverless disk cache par save karo
             plt.figure(figsize=(8, 8))
             plt.imshow(frame_small, cmap="gray", vmin=90, vmax=313)
             plt.axis("off")
@@ -197,6 +215,8 @@ class VisualizationService:
 
             return str(thumb_path)
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Thumbnail generation failed: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to generate thumbnail")
