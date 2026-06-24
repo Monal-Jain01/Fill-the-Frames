@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { validateSatelliteFile } from '@/features/upload/utils/file-validation';
+import { apiClient } from '@/lib/api-client';
 
 export type UploadStatus = 'pending' | 'validating' | 'ready' | 'uploading' | 'completed' | 'error';
 
@@ -13,12 +14,13 @@ export interface UploadFile {
   fileType?: 'netcdf' | 'hdf5';
 }
 
+// 🚨 Yahan humne interface me naye functions add kiye hain
 interface UploadStore {
   files: UploadFile[];
   addFiles: (files: File[]) => void;
   removeFile: (id: string) => void;
-  simulateUpload: (id: string) => void;
-  simulateAllReady: () => void;
+  uploadFileToServer: (id: string) => Promise<void>;
+  startAllReadyUploads: () => void;
   clearCompleted: () => void;
 }
 
@@ -51,50 +53,49 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
     }));
   },
 
-  simulateUpload: (id) => {
+  // 🚨 Yeh raha humara asli server upload function
+  uploadFileToServer: async (id: string) => {
     const fileToUpload = get().files.find(f => f.id === id);
     if (!fileToUpload || fileToUpload.status !== 'ready') return;
 
     set((state) => ({
       files: state.files.map((f) =>
-        f.id === id ? { ...f, status: 'uploading' } : f
+        f.id === id ? { ...f, status: 'uploading', progress: 10 } : f
       ),
     }));
 
-    // Mock progress interval
-    const interval = setInterval(() => {
-      set((state) => {
-        const currentFile = state.files.find((f) => f.id === id);
-        if (!currentFile || currentFile.status !== 'uploading') {
-          clearInterval(interval);
-          return state;
-        }
-
-        const newProgress = Math.min(currentFile.progress + 10 + Math.random() * 15, 100);
-        
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          return {
-            files: state.files.map((f) =>
-              f.id === id ? { ...f, progress: 100, status: 'completed', uploadedAt: new Date() } : f
-            ),
-          };
-        }
-
-        return {
+    try {
+      const response = await apiClient.uploadFile(fileToUpload.file);
+      
+      if (response.success) {
+        set((state) => ({
           files: state.files.map((f) =>
-            f.id === id ? { ...f, progress: newProgress } : f
+            f.id === id ? { 
+              ...f, 
+              progress: 100, 
+              status: 'completed', 
+              uploadedAt: new Date() 
+            } : f
           ),
-        };
-      });
-    }, 500);
+        }));
+      } else {
+        throw new Error(response.message || "Upload failed from server");
+      }
+    } catch (error: any) {
+      set((state) => ({
+        files: state.files.map((f) =>
+          f.id === id ? { ...f, status: 'error', error: error.message } : f
+        ),
+      }));
+    }
   },
 
-  simulateAllReady: () => {
-    const { files, simulateUpload } = get();
+  // 🚨 "Upload All" button ke liye
+  startAllReadyUploads: () => {
+    const { files, uploadFileToServer } = get();
     files.forEach((f) => {
       if (f.status === 'ready') {
-        simulateUpload(f.id);
+        uploadFileToServer(f.id);
       }
     });
   },
