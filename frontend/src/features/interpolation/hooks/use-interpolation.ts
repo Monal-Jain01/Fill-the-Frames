@@ -103,7 +103,15 @@ export function useInterpolation() {
           if (data.status === 'completed') {
             setJobState(prev => ({
               ...prev,
-              outputFrame: data.result_file_id, // Final result cloud URL/ID
+              outputFrame: {
+                id: data.result_file_id,
+                timestamp: new Date().toISOString(),
+                resolution: 'Generated',
+                dimensions: [0, 0],
+                data: [],
+                min: 0,
+                max: 0
+              } as any, // Cast as any because we just need the ID to pass to other views now
               completedAt: new Date().toISOString()
             }));
           }
