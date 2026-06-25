@@ -25,7 +25,7 @@ export function CTA() {
           </p>
           
           <Button asChild size="lg" className="h-14 px-10 text-lg">
-            <Link href="/dashboard/upload">
+            <Link href="/dashboard">
               Access the Platform
             </Link>
           </Button>

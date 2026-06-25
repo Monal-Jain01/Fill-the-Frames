@@ -20,6 +20,26 @@ export interface PixelData {
   colormapValue: string | null;
 }
 
+export interface FrameStatistics {
+  min: number;
+  max: number;
+  mean: number;
+  std: number;
+}
+
+export interface FrameDataResponse {
+  file_id: string;
+  variable: string;
+  time_index: number;
+  timestamp: string | null;
+  shape: [number, number];
+  min: number;
+  max: number;
+  mean: number;
+  std: number;
+  z: number[][];
+}
+
 export interface MockImageData {
   z: number[][]; // 2D array of pixel values
   min: number;

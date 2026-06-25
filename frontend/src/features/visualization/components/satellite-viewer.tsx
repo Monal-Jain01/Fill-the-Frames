@@ -2,7 +2,7 @@
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import dynamic from 'next/dynamic';
-import { MockImageData, ColorMap } from '../types';
+import { FrameDataResponse, ColorMap } from '../types';
 import { COLOR_MAPS } from '../constants';
 import { useTheme } from 'next-themes';
 
@@ -11,7 +11,7 @@ const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 import type { PlotMouseEvent } from 'plotly.js';
 
 interface SatelliteViewerProps {
-  data: MockImageData;
+  data: FrameDataResponse;
   colorMap: ColorMap;
   onHover: (e: Readonly<PlotMouseEvent>) => void;
   onUnhover: () => void;

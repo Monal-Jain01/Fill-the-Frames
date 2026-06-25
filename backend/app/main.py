@@ -13,6 +13,7 @@ from app.api import (
     metadata,
     metrics,
     upload,
+    validation,
     visualization,
 )
 from app.core.config import API_PREFIX, APP_NAME, APP_VERSION, IS_DEBUG
@@ -73,6 +74,11 @@ def get_app() -> FastAPI:
     )
     fast_app.include_router(
         metadata.router, prefix=f"{API_PREFIX}/metadata", tags=["Metadata"]
+    )
+    fast_app.include_router(
+        validation.router,
+        prefix=f"{API_PREFIX}/validation",
+        tags=["Validation"],
     )
     fast_app.include_router(
         visualization.router,

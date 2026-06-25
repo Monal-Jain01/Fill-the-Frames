@@ -55,7 +55,7 @@ export function HeroSection() {
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8">
-            <Link href="/dashboard/upload">
+            <Link href="/dashboard">
               Launch Platform <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

@@ -4,29 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  Upload,
-  Database,
-  Eye,
   Layers,
-  SplitSquareHorizontal,
-  Activity,
   Film,
-  Download,
-  Settings,
-  Info
+  CheckCircle
 } from 'lucide-react';
 
 const sidebarItems = [
-  { name: 'Upload', href: '/dashboard/upload', icon: Upload },
-  { name: 'Metadata', href: '/dashboard/metadata', icon: Database },
-  { name: 'Visualization', href: '/dashboard/visualization', icon: Eye },
-  { name: 'Interpolation', href: '/dashboard/interpolation', icon: Layers },
-  { name: 'Comparison', href: '/dashboard/comparison', icon: SplitSquareHorizontal },
-  { name: 'Metrics', href: '/dashboard/metrics', icon: Activity },
   { name: 'Animation', href: '/dashboard/animation', icon: Film },
-  { name: 'Export', href: '/dashboard/export', icon: Download },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-  { name: 'About', href: '/dashboard/about', icon: Info },
+  { name: 'Interpolation', href: '/dashboard/interpolation', icon: Layers },
+  { name: 'Validation', href: '/dashboard/validation', icon: CheckCircle },
 ];
 
 export function Sidebar() {

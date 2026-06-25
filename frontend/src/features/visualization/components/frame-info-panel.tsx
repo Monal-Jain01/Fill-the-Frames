@@ -1,13 +1,13 @@
 import React from 'react';
-import { FrameInfo } from '../types';
+import { FrameDataResponse } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { formatDate } from '@/features/metadata/utils/formatters';
 
 interface FrameInfoPanelProps {
-  info: FrameInfo;
+  data: FrameDataResponse;
 }
 
-export function FrameInfoPanel({ info }: FrameInfoPanelProps) {
+export function FrameInfoPanel({ data }: FrameInfoPanelProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -16,28 +16,28 @@ export function FrameInfoPanel({ info }: FrameInfoPanelProps) {
       <CardContent>
         <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-6">
           <div className="flex flex-col">
-            <dt className="text-sm text-muted-foreground">Satellite</dt>
-            <dd className="font-medium">{info.satellite}</dd>
+            <dt className="text-sm text-muted-foreground">Variable</dt>
+            <dd className="font-medium">{data.variable}</dd>
           </div>
           <div className="flex flex-col">
             <dt className="text-sm text-muted-foreground">Timestamp</dt>
-            <dd className="font-medium">{formatDate(info.timestamp)}</dd>
+            <dd className="font-medium">{data.timestamp ? formatDate(data.timestamp) : 'N/A'}</dd>
           </div>
           <div className="flex flex-col">
-            <dt className="text-sm text-muted-foreground">Frame Type</dt>
-            <dd className="font-medium">{info.frameType}</dd>
-          </div>
-          <div className="flex flex-col">
-            <dt className="text-sm text-muted-foreground">Band / Variable</dt>
-            <dd className="font-medium">{info.band}</dd>
+            <dt className="text-sm text-muted-foreground">Time Index</dt>
+            <dd className="font-medium">{data.time_index}</dd>
           </div>
           <div className="flex flex-col">
             <dt className="text-sm text-muted-foreground">Dimensions</dt>
-            <dd className="font-medium">{info.dimensions.join(' × ')} pixels</dd>
+            <dd className="font-medium">{data.shape.join(' × ')} pixels</dd>
           </div>
           <div className="flex flex-col">
-            <dt className="text-sm text-muted-foreground">Resolution</dt>
-            <dd className="font-medium">{info.resolution}</dd>
+            <dt className="text-sm text-muted-foreground">Mean Value</dt>
+            <dd className="font-medium">{data.mean.toFixed(2)}</dd>
+          </div>
+          <div className="flex flex-col">
+            <dt className="text-sm text-muted-foreground">Standard Deviation</dt>
+            <dd className="font-medium">{data.std.toFixed(2)}</dd>
           </div>
         </dl>
       </CardContent>

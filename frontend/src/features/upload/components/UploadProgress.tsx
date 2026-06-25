@@ -1,7 +1,6 @@
 import { Progress } from '@/components/ui/progress';
-import { UploadStatus } from '@/store/upload-store';
 
-export function UploadProgress({ progress, status }: { progress: number, status: UploadStatus }) {
+export function UploadProgress({ progress, status }: { progress: number, status: string }) {
   return (
     <div className="w-full h-1.5 overflow-hidden rounded-full bg-secondary">
       <Progress 

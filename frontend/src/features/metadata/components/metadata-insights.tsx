@@ -1,38 +1,42 @@
 import React from 'react';
-import { DetailedSatelliteMetadata } from '../types';
 import { Card, CardContent } from '@/components/ui/card';
-import { Layers, Box, Globe, Clock, Maximize } from 'lucide-react';
+import { BrainCircuit, Globe, Clock, Maximize } from 'lucide-react';
 import { formatDate } from '../utils/formatters';
 
 interface MetadataInsightsProps {
-  data: DetailedSatelliteMetadata;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any;
 }
 
 export function MetadataInsights({ data }: MetadataInsightsProps) {
+  // Use generic variables array if available, else empty
+  const variables = data?.variables || [];
+  const dimensions = data?.dimensions || [];
+
   const insights = [
     {
       title: 'Variables',
-      value: data.variables.length.toString(),
-      icon: <Layers className="w-5 h-5 text-blue-500" />,
+      value: variables.length.toString(),
+      icon: <BrainCircuit className="w-5 h-5 text-blue-500" />,
     },
     {
       title: 'Dimensions',
-      value: data.dimensions.length.toString(),
-      icon: <Box className="w-5 h-5 text-purple-500" />,
+      value: dimensions.length.toString(),
+      icon: <Maximize className="w-5 h-5 text-purple-500" />,
     },
     {
       title: 'CRS Detected',
-      value: data.crs.split(' ')[0], // Simplify long CRS names
+      value: data?.crs ? data.crs.split(' ')[0] : 'Unknown', // Simplify long CRS names
       icon: <Globe className="w-5 h-5 text-emerald-500" />,
     },
     {
       title: 'Timestamp',
-      value: formatDate(data.timestamp).split(',')[0], // Show date part
+      value: data?.timestamp ? formatDate(data.timestamp).split(',')[0] : 'N/A', // Show date part
       icon: <Clock className="w-5 h-5 text-amber-500" />,
     },
     {
       title: 'Spatial Coverage',
-      value: `${Math.abs(data.boundingBox[2] - data.boundingBox[0])}° × ${Math.abs(data.boundingBox[3] - data.boundingBox[1])}°`,
+      value: data?.boundingBox ? `${Math.abs(data.boundingBox[2] - data.boundingBox[0])}° × ${Math.abs(data.boundingBox[3] - data.boundingBox[1])}°` : 'N/A',
       icon: <Maximize className="w-5 h-5 text-pink-500" />,
     },
   ];

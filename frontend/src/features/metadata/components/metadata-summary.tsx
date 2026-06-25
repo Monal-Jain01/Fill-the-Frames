@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { DetailedSatelliteMetadata } from '../types';
+import { MetadataResponse } from '../types';
 import { MetadataCard } from './metadata-card';
 import {
   BarChart,
@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 
 interface MetadataSummaryProps {
-  data: DetailedSatelliteMetadata;
+  data: MetadataResponse;
 }
 
 export function MetadataSummary({ data }: MetadataSummaryProps) {
@@ -27,12 +27,12 @@ export function MetadataSummary({ data }: MetadataSummaryProps) {
 
   // Format data for Variable Data Ranges Chart (only variables with min/max)
   const rangeData = data.variables
-    .filter(v => v.min !== undefined && v.max !== undefined)
+    .filter(v => v.min_value !== undefined && v.max_value !== undefined)
     .map(v => ({
       name: v.name,
-      min: v.min,
-      max: v.max,
-      range: [v.min, v.max] // For Custom Tooltip or custom rendering if needed
+      min: v.min_value,
+      max: v.max_value,
+      range: [v.min_value, v.max_value] // For Custom Tooltip or custom rendering if needed
     }));
 
   return (

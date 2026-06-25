@@ -1,32 +1,49 @@
-import { SatelliteMetadata } from '@/types/satellite';
-
 export type MetadataState = 'empty' | 'loading' | 'ready' | 'error';
 
-export interface VariableDetail {
+export interface DimensionInfo {
   name: string;
-  dtype: string;
+  size: number;
+}
+
+export interface VariableInfo {
+  name: string;
+  datatype: string;
   dimensions: string[];
-  attributes: Record<string, string | number>;
-  min?: number;
-  max?: number;
-  mean?: number;
+  shape: number[];
+  attributes: Record<string, unknown>;
+  min_value?: number;
+  max_value?: number;
 }
 
-export interface DimensionDetail {
-  name: string;
+export interface CoordinateInfo {
+  latitude?: string;
+  longitude?: string;
+  projection?: string;
+}
+
+export interface TemporalInfo {
+  start_time?: string;
+  end_time?: string;
+  time_steps?: number;
+}
+
+export interface DatasetSummary {
+  file_format: string;
+  variable_count: number;
+  dimension_count: number;
+  coordinate_count: number;
+  dataset_size: number;
+}
+
+export interface MetadataResponse {
+  file_id: string;
+  filename: string;
   size: number;
-}
-
-export interface CoordinateDetail {
-  name: string;
-  dtype: string;
-  size: number;
-  range: [number, number];
-}
-
-export interface DetailedSatelliteMetadata extends Omit<SatelliteMetadata, 'variables'> {
-  fileSize: number; // in bytes
-  dimensions: DimensionDetail[];
-  variables: VariableDetail[];
-  coordinates: CoordinateDetail[];
+  format: string;
+  global_attributes: Record<string, unknown>;
+  dimensions: DimensionInfo[];
+  variables: VariableInfo[];
+  coordinates: CoordinateInfo;
+  temporal_info: TemporalInfo;
+  summary: DatasetSummary;
 }

@@ -1,11 +1,11 @@
 'use client';
 
-import { useUploadStore } from '@/store/upload-store';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { File, CheckCircle2, AlertCircle, HardDrive } from 'lucide-react';
 
 export function UploadSummary() {
-  const files = useUploadStore((state) => state.files);
+  const files: { status: string; file: File }[] = [];
   
   if (files.length === 0) return null;
 

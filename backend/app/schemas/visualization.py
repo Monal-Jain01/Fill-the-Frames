@@ -1,7 +1,19 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+
+class FrameDataResponse(BaseModel):
+    file_id: str = Field(..., description="ID of the associated file")
+    variable: str = Field(..., description="Variable name")
+    time_index: int = Field(..., description="Time index")
+    timestamp: Optional[str] = Field(None, description="ISO timestamp")
+    shape: List[int] = Field(..., description="Dimensions of the data [height, width]")
+    min: float = Field(..., description="Minimum value")
+    max: float = Field(..., description="Maximum value")
+    mean: float = Field(..., description="Mean value")
+    std: float = Field(..., description="Standard deviation")
+    z: List[List[float]] = Field(..., description="2D matrix of pixel values")
 
 class VariableMetadata(BaseModel):
     name: str = Field(..., description="Name of the scientific variable")

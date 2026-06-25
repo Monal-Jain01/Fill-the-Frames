@@ -11,7 +11,7 @@ export function Navbar() {
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <nav className="flex items-center space-x-4">
-            <Link href="/dashboard/upload" className="text-sm font-medium transition-colors hover:text-primary">
+            <Link href="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
               Dashboard
             </Link>
             <Link href="/dashboard/about" className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground">

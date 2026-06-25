@@ -1,15 +1,29 @@
 import React from 'react';
-import { ValidationInsights } from '../types';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShieldCheck } from 'lucide-react';
-import { STATUS_COLORS } from '../constants';
 import { cn } from '@/lib/utils';
+import { MetricsResponse } from '@/lib/api/validation-client';
 
 interface OverallQualityScoreProps {
-  insights: ValidationInsights;
+  metrics: MetricsResponse;
 }
 
-export function OverallQualityScore({ insights }: OverallQualityScoreProps) {
+export function OverallQualityScore({ metrics }: OverallQualityScoreProps) {
+  // We can calculate a color band based on the backend quality score
+  let statusColor = "text-red-500";
+  let statusText = "Poor";
+  
+  if (metrics.quality_score >= 90) {
+    statusColor = "text-emerald-500";
+    statusText = "Excellent";
+  } else if (metrics.quality_score >= 75) {
+    statusColor = "text-blue-500";
+    statusText = "Good";
+  } else if (metrics.quality_score >= 50) {
+    statusColor = "text-amber-500";
+    statusText = "Fair";
+  }
+
   return (
     <Card className="bg-primary/5 border-primary/20 shadow-sm overflow-hidden relative">
       <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -23,15 +37,16 @@ export function OverallQualityScore({ insights }: OverallQualityScoreProps) {
               Overall Validation Score
             </h3>
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-black">{insights.overallScore}</span>
+              <span className="text-5xl font-black">{metrics.quality_score}</span>
               <span className="text-xl text-muted-foreground">/ 100</span>
             </div>
+            <p className="text-sm text-muted-foreground">{metrics.summary}</p>
           </div>
           
           <div className="flex flex-col gap-1 md:text-right">
             <span className="text-sm font-medium text-muted-foreground uppercase">Quality Band</span>
-            <span className={cn("text-2xl font-bold capitalize", STATUS_COLORS[insights.status])}>
-              {insights.status} Accuracy
+            <span className={cn("text-2xl font-bold capitalize", statusColor)}>
+              {statusText} Accuracy
             </span>
           </div>
         </div>

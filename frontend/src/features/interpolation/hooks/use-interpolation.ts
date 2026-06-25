@@ -1,27 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
-import { InterpolationJobState, InterpolationConfig } from '../types';
-import { DEFAULT_INTERPOLATION_CONFIG } from '../constants';
-import { apiClient } from '@/lib/api-client';
+import { useRef, useEffect } from 'react';
+import { useInterpolationStore } from '@/store/interpolation-store';
+import { useValidationStore } from '@/store/validation-store';
+import { interpolationClient } from '@/lib/api/interpolation-client';
 
-// SSE connection ke liye BASE_URL chahiye
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://sid385-fill-the-frames.hf.space/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
 export function useInterpolation() {
-  const [jobState, setJobState] = useState<InterpolationJobState>({
-    status: 'idle',
-    progress: 0,
-    config: DEFAULT_INTERPOLATION_CONFIG,
-    inputFrames: {
-      t0: null, // 🚨 Note: Ab default mock data hata diya hai
-      t1: null,
-    },
-    outputFrame: null,
-  });
-
-  // Reference to hold the EventSource so we can close it if user leaves the page
+  const store = useInterpolationStore();
+  const validationStore = useValidationStore();
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  // Cleanup effect
   useEffect(() => {
     return () => {
       if (eventSourceRef.current) {
@@ -30,103 +18,77 @@ export function useInterpolation() {
     };
   }, []);
 
-  const updateConfig = (newConfig: Partial<InterpolationConfig>) => {
-    setJobState(prev => ({
-      ...prev,
-      config: { ...prev.config, ...newConfig }
-    }));
-  };
-
-  const setInputFrame = (key: 't0' | 't1', id: string, filename: string) => {
-    setJobState(prev => ({
-      ...prev,
-      inputFrames: {
-        ...prev.inputFrames,
-        [key]: { 
-          id: id, 
-          filename: filename, 
-          timestamp: new Date().toISOString(), // UI ke liye dummy date
-          resolution: 'Metadata Pending' // UI me crash roken ke liye
-        }
-      }
-    }));
-  };
-
   const startInterpolation = async () => {
-    // Check if user has actually selected files
-    const t0Id = jobState.inputFrames.t0?.id; 
-    const t1Id = jobState.inputFrames.t1?.id;
+    const t0Id = store.t0FileId;
+    const t1Id = store.t1FileId;
 
     if (!t0Id || !t1Id) {
-      alert("Bhai, pehle 2 files select karo interpolation ke liye!");
+      alert("Please upload both T0 and T1 frames before interpolating.");
       return;
     }
 
-    setJobState(prev => ({
-      ...prev,
+    store.setJobState({
       status: 'preparing',
       progress: 0,
       startedAt: new Date().toISOString(),
-      outputFrame: null,
+      outputFileId: null,
       error: undefined,
-    }));
+    });
 
     try {
-      // 1. Backend API Call to Queue Job
-      const res = await apiClient.generateInterpolation(t0Id, t1Id, jobState.config.variable || "C13");
+      const res = await interpolationClient.generateInterpolation(t0Id, t1Id, store.config.variable || "C13");
       
       if (!res.success) throw new Error(res.message);
 
-      const jobId = res.data.job_id;
-      setJobState(prev => ({ ...prev, status: 'processing', jobId }));
+      const responseData = res.data as { job_id: string };
+      const jobId = responseData.job_id;
+      store.setJobState({ status: 'processing', jobId });
 
-      // 2. Open Server-Sent Events (SSE) Stream
       const sseUrl = `${BASE_URL}/interpolation/events/${jobId}`;
       const eventSource = new EventSource(sseUrl);
       eventSourceRef.current = eventSource;
 
-      // 3. Listen to Live Progress
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
 
         if (data.error) {
-          setJobState(prev => ({ ...prev, status: 'error', error: data.error }));
+          store.setJobState({ status: 'error', error: data.error });
           eventSource.close();
           return;
         }
 
-        setJobState(prev => ({ 
-          ...prev, 
+        store.setJobState({ 
           progress: data.progress, 
           status: data.status 
-        }));
+        });
 
-        // Agar job khatam ho gayi (pass ya fail)
         if (data.status === 'completed' || data.status === 'failed') {
           if (data.status === 'completed') {
-            setJobState(prev => ({
-              ...prev,
-              outputFrame: data.result_file_id, // Final result cloud URL/ID
+            store.setJobState({
+              outputFileId: data.result_file_id,
               completedAt: new Date().toISOString()
-            }));
+            });
+            // Propagate to validation store
+            if (data.result_file_id) {
+              validationStore.setArtifactId(data.result_file_id);
+            }
           }
-          eventSource.close(); // Stream band karo taaki loop na chale
+          eventSource.close();
         }
       };
 
       eventSource.onerror = () => {
         console.error("SSE connection lost!");
-        setJobState(prev => ({ ...prev, status: 'error', error: 'Connection to server lost. Still processing in cloud.' }));
+        store.setJobState({ status: 'error', error: 'Connection to server lost. Still processing in cloud.' });
         eventSource.close();
       };
 
-    } catch (error: any) {
-      setJobState(prev => ({
-        ...prev,
+    } catch (error: unknown) {
+      store.setJobState({
         status: 'error',
-        error: error.message || 'Failed to generate interpolation frame.',
+        error: error instanceof Error ? error.message : 'Failed to generate interpolation frame.',
         completedAt: new Date().toISOString(),
-      }));
+      });
     }
   };
 
@@ -134,23 +96,11 @@ export function useInterpolation() {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
-    setJobState(prev => ({
-      ...prev,
-      status: 'idle',
-      progress: 0,
-      outputFrame: null,
-      jobId: undefined,
-      startedAt: undefined,
-      completedAt: undefined,
-      error: undefined,
-    }));
+    store.reset();
   };
 
   return {
-    jobState,
-    updateConfig,
     startInterpolation,
     resetJob,
-    setInputFrame, // 🚨 Yeh naya add kiya hai
   };
 }

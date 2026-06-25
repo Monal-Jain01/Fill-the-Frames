@@ -6,13 +6,16 @@ import { VisualizationSummaryCards } from './visualization-summary-cards';
 import { VisualizationToolbar } from './visualization-toolbar';
 import { SatelliteViewer, SatelliteViewerRef } from './satellite-viewer';
 import { PixelInspector } from './pixel-inspector';
-import { FrameHistogram } from './frame-histogram';
 import { FrameInfoPanel } from './frame-info-panel';
 import { VisualizationEmptyState } from './visualization-empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 
-export function VisualizationDashboard() {
+interface VisualizationDashboardProps {
+  fileId?: string | null;
+}
+
+export function VisualizationDashboard({ fileId }: VisualizationDashboardProps) {
   const {
     state,
     data,
@@ -23,7 +26,7 @@ export function VisualizationDashboard() {
     pixelData,
     handleHover,
     handleUnhover
-  } = useVisualization();
+  } = useVisualization(fileId);
 
   const viewerRef = useRef<SatelliteViewerRef>(null);
 
@@ -60,7 +63,7 @@ export function VisualizationDashboard() {
       transition={{ duration: 0.3 }}
       className={`space-y-6 ${isFullscreen ? 'fixed inset-4 z-50 bg-background overflow-auto' : ''}`}
     >
-      {!isFullscreen && <VisualizationSummaryCards info={data.info} />}
+      {!isFullscreen && <VisualizationSummaryCards data={data} />}
       
       <VisualizationToolbar 
         colorMap={colorMap}
@@ -83,8 +86,8 @@ export function VisualizationDashboard() {
       {!isFullscreen && (
         <>
           <PixelInspector pixel={pixelData} />
-          <FrameHistogram data={data} />
-          <FrameInfoPanel info={data.info} />
+          {/* We remove FrameHistogram or update it later if it doesn't support the new data shape. Let's just remove it for now as it's not in the requirements */}
+          <FrameInfoPanel data={data} />
         </>
       )}
     </motion.div>
