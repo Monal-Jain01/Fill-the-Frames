@@ -1,120 +1,67 @@
-import { Play, Pause, Square, SkipBack, SkipForward, Repeat } from "lucide-react";
+"use client";
+
+import { useAnimationStore } from "@/store/animation-store";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlaybackState, AnimationSettings } from "../types";
-import { ANIMATION_PLAYBACK_SPEEDS } from "../constants";
+import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface AnimationControlsProps {
-  playbackState: PlaybackState;
-  settings: AnimationSettings;
-  totalFrames: number;
-  onPlay: () => void;
-  onPause: () => void;
-  onStop: () => void;
-  onNext: () => void;
-  onPrev: () => void;
-  onUpdateSettings: (settings: Partial<AnimationSettings>) => void;
-}
-
-export function AnimationControls({
-  playbackState,
-  settings,
-  totalFrames,
-  onPlay,
-  onPause,
-  onStop,
-  onNext,
-  onPrev,
-  onUpdateSettings,
-}: AnimationControlsProps) {
-  const isPlaying = playbackState === "playing";
-  const hasFrames = totalFrames > 0;
+export function AnimationControls() {
+  const { playing, play, pause, prevFrame, nextFrame, playbackSpeed, setSpeed, frames } = useAnimationStore();
+  const disabled = frames.length === 0;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 p-4 border rounded-lg bg-card text-card-foreground shadow-sm">
+    <div className="flex items-center gap-4 bg-slate-900 p-3 rounded-lg border border-slate-800">
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onPrev}
-          disabled={!hasFrames}
-          title="Previous Frame"
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={prevFrame} 
+          disabled={disabled}
         >
-          <SkipBack className="h-4 w-4" />
+          <SkipBack className="w-4 h-4" />
         </Button>
-        
-        {isPlaying ? (
-          <Button
-            variant="default"
-            size="icon"
-            onClick={onPause}
-            disabled={!hasFrames}
-            title="Pause"
-          >
-            <Pause className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            variant="default"
-            size="icon"
-            onClick={onPlay}
-            disabled={!hasFrames}
-            title="Play"
-          >
-            <Play className="h-4 w-4" />
-          </Button>
-        )}
-
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onStop}
-          disabled={!hasFrames || playbackState === "stopped"}
-          title="Stop"
+        <Button 
+          variant={playing ? "default" : "outline"} 
+          size="icon" 
+          onClick={playing ? pause : play} 
+          disabled={disabled}
+          className={playing ? "bg-blue-600 hover:bg-blue-700" : ""}
         >
-          <Square className="h-4 w-4" />
+          {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
         </Button>
-
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onNext}
-          disabled={!hasFrames}
-          title="Next Frame"
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={nextFrame} 
+          disabled={disabled}
         >
-          <SkipForward className="h-4 w-4" />
+          <SkipForward className="w-4 h-4" />
         </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Speed:</span>
-          <Select
-            value={settings.playbackSpeed.toString()}
-            onValueChange={(val) => onUpdateSettings({ playbackSpeed: parseFloat(val) })}
-            disabled={!hasFrames}
-          >
-            <SelectTrigger className="w-[80px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ANIMATION_PLAYBACK_SPEEDS.map((speed) => (
-                <SelectItem key={speed} value={speed.toString()}>
-                  {speed}x
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button
-          variant={settings.loopMode ? "secondary" : "outline"}
-          size="icon"
-          onClick={() => onUpdateSettings({ loopMode: !settings.loopMode })}
-          title="Toggle Loop"
+      <div className="flex items-center gap-2 ml-auto">
+        <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Speed</span>
+        <Select 
+          value={playbackSpeed.toString()} 
+          onValueChange={(val) => setSpeed(parseFloat(val))}
+          disabled={disabled}
         >
-          <Repeat className={`h-4 w-4 ${settings.loopMode ? "text-primary" : "text-muted-foreground"}`} />
-        </Button>
+          <SelectTrigger className="w-[80px] h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0.5">0.5x</SelectItem>
+            <SelectItem value="1">1x</SelectItem>
+            <SelectItem value="2">2x</SelectItem>
+            <SelectItem value="4">4x</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
