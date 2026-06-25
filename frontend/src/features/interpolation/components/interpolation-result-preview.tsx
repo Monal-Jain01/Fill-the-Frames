@@ -67,7 +67,8 @@ function PreviewWrapper({ fileId }: { fileId: string }) {
     );
   }
 
-  if (vis.state === 'error' || !vis.data) {
+  // Allow passing even if data is null, as long as we have layerUrl (for leaflet maps)
+  if (vis.state === 'error') {
     return (
       <div className="w-full h-full min-h-[400px] flex items-center justify-center p-4">
         <p className="text-destructive">Failed to load frame visualization.</p>
@@ -78,6 +79,8 @@ function PreviewWrapper({ fileId }: { fileId: string }) {
   return (
     <div className="w-full h-full min-h-[400px] relative">
       <SatelliteViewer 
+        layerUrl={vis.layerUrl}
+        bounds={vis.bounds}
         data={vis.data}
         colorMap={vis.colorMap}
         onHover={vis.handleHover}

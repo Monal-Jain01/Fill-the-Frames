@@ -23,8 +23,11 @@ export function useVisualization(fileId?: string | null) {
     x: null, y: null, value: null, colormapValue: null
   });
 
+  const [layerUrl, setLayerUrl] = useState<string | null>(null);
+  const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
+
   // Derived state string for UI compatibility
-  const state = visLoading ? 'loading' : error ? 'error' : data ? 'ready' : 'empty';
+  const state = visLoading ? 'loading' : error ? 'error' : 'ready';
 
   useEffect(() => {
     if (store.status === 'completed') {
@@ -56,15 +59,39 @@ export function useVisualization(fileId?: string | null) {
   useEffect(() => {
     if (!fileId || !selectedVariable) return;
 
-    const fetchFrame = async () => {
+    const fetchFrameAndImage = async () => {
       try {
         store.setVisState({ visLoading: true, visError: null });
-        const res = await visualizationClient.getFrame(fileId, selectedVariable, selectedTimeIndex);
-        if (res.success) {
-          store.setVisState({ currentFrame: res.data, visLoading: false });
-        } else {
-          store.setVisState({ visError: res.message, visLoading: false });
+        
+        // Generate layer url
+        const url = visualizationClient.getLayerUrl(fileId, selectedVariable, selectedTimeIndex);
+        setLayerUrl(url);
+
+        // Fetch bounds
+        try {
+          const boundsRes = await visualizationClient.getBounds(fileId);
+          if (boundsRes.success && boundsRes.data) {
+             setBounds([
+               boundsRes.data.min_lat,
+               boundsRes.data.min_lon,
+               boundsRes.data.max_lat,
+               boundsRes.data.max_lon
+             ]);
+          }
+        } catch(e) {
+          console.warn("Could not load dynamic bounds", e);
         }
+
+        // Backend only has images right now, getFrame might throw 404, we catch it silently.
+        try {
+          const res = await visualizationClient.getFrame(fileId, selectedVariable, selectedTimeIndex);
+          if (res.success) {
+            store.setVisState({ currentFrame: res.data, visLoading: false });
+          }
+        } catch(err) {
+           store.setVisState({ visLoading: false }); // image layer takes priority
+        }
+
       } catch (err: unknown) {
         store.setVisState({ 
           visError: err instanceof Error ? err.message : 'Failed to load frame',
@@ -73,7 +100,7 @@ export function useVisualization(fileId?: string | null) {
       }
     };
 
-    fetchFrame();
+    fetchFrameAndImage();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileId, selectedVariable, selectedTimeIndex]);
 
@@ -113,5 +140,7 @@ export function useVisualization(fileId?: string | null) {
     selectedTimeIndex,
     setSelectedTimeIndex: (t: number) => store.setVisState({ selectedTimeIndex: t }),
     availableVariables: store.availableVariables,
+    layerUrl,
+    bounds
   };
 }

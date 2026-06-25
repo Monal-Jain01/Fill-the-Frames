@@ -25,4 +25,20 @@ export const visualizationClient = {
 
     return response.json();
   },
+
+  getBounds: async (fileId: string): Promise<ApiResponse<any>> => {
+    const response = await fetch(`${BASE_URL}/visualization/${fileId}/bounds`);
+    if (!response.ok) {
+      throw new Error(`Failed to get bounds with status ${response.status}`);
+    }
+    return response.json();
+  },
+
+  getLayerUrl: (fileId: string, variable: string, timestamp: number = 0): string => {
+    return `/visualization/${fileId}/layer?variable=${variable}&timestamp=${timestamp}`;
+  },
+
+  getErrorMapLayerUrl: (fileId1: string, fileId2: string, variable: string, timestamp: number = 0): string => {
+    return `/visualization/error-map/layer?actual_file_id=${fileId1}&ai_file_id=${fileId2}&variable=${variable}&timestamp=${timestamp}`;
+  }
 };
