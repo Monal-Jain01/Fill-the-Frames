@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { InterpolationJobState } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useVisualization } from '@/features/visualization/hooks/use-visualization';
@@ -26,7 +26,7 @@ export function InterpolationResultPreview({ jobState }: InterpolationResultPrev
       <CardContent className="p-0">
         <div className="grid grid-cols-1 md:grid-cols-4 min-h-[400px]">
           <div className="md:col-span-3 border-r bg-background">
-            <PreviewWrapper fileId={jobState.outputFileId} />
+            <PreviewWrapper fileId={jobState.outputFileId} variable={jobState.config.variable} />
           </div>
           
           <div className="p-6 flex flex-col gap-6 bg-muted/10">
@@ -57,13 +57,25 @@ export function InterpolationResultPreview({ jobState }: InterpolationResultPrev
 import { visualizationClient } from '@/lib/api/visualization-client';
 
 // Separate wrapper component to bypass complex visualization hooks
-function PreviewWrapper({ fileId }: { fileId: string }) {
-  const generatedLayerUrl = visualizationClient.getLayerUrl(fileId, "C13", 0);
+function PreviewWrapper({ fileId, variable }: { fileId: string, variable?: string }) {
+  const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
+  const varName = variable || "C13";
+
+  useEffect(() => {
+    visualizationClient.getBounds(fileId, varName).then(res => {
+      if (res.success && res.data) {
+        setBounds([res.data.min_lat, res.data.min_lon, res.data.max_lat, res.data.max_lon]);
+      }
+    }).catch(console.error);
+  }, [fileId, varName]);
+
+  const generatedLayerUrl = visualizationClient.getLayerUrl(fileId, varName, 0);
 
   return (
     <div className="w-full h-full min-h-[400px] relative">
       <SatelliteViewer 
         layerUrl={generatedLayerUrl}
+        bounds={bounds}
       />
     </div>
   );

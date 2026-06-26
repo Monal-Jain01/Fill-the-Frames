@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useValidationStore } from '@/store/validation-store';
 import { visualizationClient } from '@/lib/api/visualization-client';
@@ -11,7 +11,20 @@ const LeafletCompareMap = dynamic(
 );
 
 export function ValidationViewer() {
-  const { artifactId, groundTruthFileId } = useValidationStore();
+  const { artifactId, groundTruthFileId, selectedVariable } = useValidationStore();
+  const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
+
+  const varName = selectedVariable || "C13";
+
+  useEffect(() => {
+    if (artifactId) {
+      visualizationClient.getBounds(artifactId, varName).then(res => {
+        if (res.success && res.data) {
+          setBounds([res.data.min_lat, res.data.min_lon, res.data.max_lat, res.data.max_lon]);
+        }
+      }).catch(console.error);
+    }
+  }, [artifactId, varName]);
 
   if (!artifactId || !groundTruthFileId) {
     return (
@@ -21,13 +34,13 @@ export function ValidationViewer() {
     );
   }
 
-  const generatedUrl = visualizationClient.getLayerUrl(artifactId, "C13", 0);
-  const truthUrl = visualizationClient.getLayerUrl(groundTruthFileId, "C13", 0);
+  const generatedUrl = visualizationClient.getLayerUrl(artifactId, varName, 0);
+  const truthUrl = visualizationClient.getLayerUrl(groundTruthFileId, varName, 0);
 
   return (
     <div className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden border border-border shadow-md">
       <div className="relative h-[500px] w-full bg-[#0a0a0a]">
-        <LeafletCompareMap leftUrl={truthUrl} rightUrl={generatedUrl} />
+        <LeafletCompareMap leftUrl={truthUrl} rightUrl={generatedUrl} bounds={bounds} />
       </div>
       
       <div className="flex justify-between p-4 bg-muted/30 text-sm font-medium">

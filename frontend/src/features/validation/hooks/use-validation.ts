@@ -46,7 +46,7 @@ export function useValidation() {
       const metricsData = await validationClient.compareMetrics({
         generated_file_id: store.artifactId,
         ground_truth_file_id: store.groundTruthFileId,
-        variable: "C13",
+        variable: store.selectedVariable || "C13",
       });
 
       store.setMetricsState({

@@ -121,31 +121,40 @@ export function InterpolationWorkflowWrapper() {
       id: 5,
       label: 'Process',
       description: 'Run Interpolation',
-      component: (
-        <div className="space-y-8 max-w-2xl mx-auto">
-          <InterpolationConfigPanel 
-            config={store.config} 
-            onConfigChange={store.updateConfig} 
-          />
-          <div className="flex justify-center pt-4">
-            <Button 
-              size="lg" 
-              onClick={() => startInterpolation()}
+      component: (() => {
+        const availableVars = store.t1Metadata?.variables?.map(v => v.name) || ["C13"];
+        if (!store.config.variable) {
+          // Initialize with first available var
+          setTimeout(() => store.updateConfig({ variable: availableVars[0] }), 0);
+        }
+        return (
+          <div className="space-y-8 max-w-2xl mx-auto">
+            <InterpolationConfigPanel 
+              config={store.config} 
+              onConfigChange={store.updateConfig} 
+              availableVariables={availableVars}
               disabled={store.status === 'processing'}
-              className="w-48 font-semibold shadow-lg"
-            >
-              {store.status === 'processing' ? 'Generating...' : 'Generate T0.5 Frame'}
-            </Button>
-          </div>
-          <InterpolationTimeline status={store.status} />
-          <InterpolationStatus jobState={store} />
-          {store.status === 'completed' && (
+            />
             <div className="flex justify-center pt-4">
-              <Button onClick={store.nextStep}>View Generated Result</Button>
+              <Button 
+                size="lg" 
+                onClick={() => startInterpolation()}
+                disabled={store.status === 'processing'}
+                className="w-48 font-semibold shadow-lg"
+              >
+                {store.status === 'processing' ? 'Generating...' : 'Generate T0.5 Frame'}
+              </Button>
             </div>
-          )}
-        </div>
-      ),
+            <InterpolationTimeline status={store.status} />
+            <InterpolationStatus jobState={store} />
+            {store.status === 'completed' && (
+              <div className="flex justify-center pt-4">
+                <Button onClick={store.nextStep}>View Generated Result</Button>
+              </div>
+            )}
+          </div>
+        );
+      })(),
     },
     {
       id: 6,

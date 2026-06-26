@@ -53,6 +53,8 @@ export function ComparisonDashboard() {
           <DifferenceMapViewer 
             differenceMap={differenceMap}
             isFullscreen={isFullscreen}
+            // Ideally we pass fileId here, but comparison dashboard is generic.
+            // If it doesn't have a fileId, it will default to India bounds.
           />
         ) : (
           <ComparisonGrid 

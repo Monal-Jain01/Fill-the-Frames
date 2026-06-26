@@ -26,8 +26,8 @@ export const visualizationClient = {
     return response.json();
   },
 
-  getBounds: async (fileId: string): Promise<ApiResponse<any>> => {
-    const response = await fetch(`${BASE_URL}/visualization/${fileId}/bounds`);
+  getBounds: async (fileId: string, variable: string = "C13"): Promise<ApiResponse<any>> => {
+    const response = await fetch(`${BASE_URL}/visualization/${fileId}/bounds?variable=${encodeURIComponent(variable)}`);
     if (!response.ok) {
       throw new Error(`Failed to get bounds with status ${response.status}`);
     }

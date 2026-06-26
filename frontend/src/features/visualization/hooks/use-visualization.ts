@@ -69,7 +69,7 @@ export function useVisualization(fileId?: string | null) {
 
         // Fetch bounds
         try {
-          const boundsRes = await visualizationClient.getBounds(fileId);
+          const boundsRes = await visualizationClient.getBounds(fileId, selectedVariable);
           if (boundsRes.success && boundsRes.data) {
              setBounds([
                boundsRes.data.min_lat,

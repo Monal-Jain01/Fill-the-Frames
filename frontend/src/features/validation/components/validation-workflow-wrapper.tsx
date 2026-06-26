@@ -8,6 +8,7 @@ import { UploadDropzone } from '@/features/upload/components/UploadDropzone';
 import { MetadataOverview } from '@/features/metadata/components/metadata-overview';
 import { ValidationViewer } from './validation-viewer';
 import dynamic from 'next/dynamic';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 const DifferenceMapViewer = dynamic(
   () => import('@/features/comparison/components/difference-map-viewer').then(mod => mod.DifferenceMapViewer),
   { ssr: false, loading: () => <div className="w-full h-[500px] flex items-center justify-center animate-pulse bg-muted">Loading map...</div> }
@@ -86,13 +87,36 @@ export function ValidationWorkflowWrapper() {
 
     if (!store.groundTruthMetadata) return null;
 
+    const availableVariables = store.groundTruthMetadata.variables?.map(v => v.name) || ["C13", "TIR1"];
+
     return (
       <div className="space-y-6">
         <MetadataOverview data={store.groundTruthMetadata} />
         <MetadataSummary data={store.groundTruthMetadata} />
         <MetadataVariableList data={store.groundTruthMetadata} />
-        <div className="flex justify-center pt-4">
+        
+        <div className="flex flex-col items-center gap-4 pt-4 border-t mt-6">
+          <div className="w-full max-w-sm space-y-2">
+            <label className="text-sm font-medium">Select Variable for Validation</label>
+            <Select 
+              value={store.selectedVariable || availableVariables[0]} 
+              onValueChange={(val) => store.setSelectedVariable(val)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select variable..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableVariables.map((v) => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <Button onClick={async () => {
+            if (!store.selectedVariable) {
+               store.setSelectedVariable(availableVariables[0]);
+            }
             nextStep();
             await alignFrames();
           }}>Proceed to Visual Inspection</Button>
@@ -175,11 +199,11 @@ export function ValidationWorkflowWrapper() {
              differenceMap={store.differenceMap || dummyDifferenceMap}
              errorMapUrl={
                store.validationPair 
-                 ? visualizationClient.getErrorMapLayerUrl(store.validationPair.groundTruthId, store.validationPair.generatedId, "C13", 0)
+                 ? visualizationClient.getErrorMapLayerUrl(store.validationPair.groundTruthId, store.validationPair.generatedId, store.selectedVariable || "C13", 0)
                  : null
              }
-             sharedLayout={{}}
-             onRelayout={() => {}}
+             fileIdForBounds={store.validationPair?.groundTruthId}
+             variable={store.selectedVariable || "C13"}
              isFullscreen={false}
            />
            <div className="flex justify-center pt-4">

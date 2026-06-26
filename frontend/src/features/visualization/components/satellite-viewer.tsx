@@ -52,7 +52,7 @@ export const SatelliteViewer = forwardRef<SatelliteViewerRef, SatelliteViewerPro
 
     return (
       <div className="relative w-full h-full min-h-[400px] md:min-h-[600px] border rounded-lg overflow-hidden bg-[#0a0a0a]">
-        <LeafletMap url={fullUrl} resetTrigger={resetTrigger} />
+        <LeafletMap url={fullUrl} resetTrigger={resetTrigger} bounds={bounds} />
       </div>
     );
   }

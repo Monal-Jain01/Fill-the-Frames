@@ -319,9 +319,10 @@ function createSideBySide() {
 interface LeafletCompareMapProps {
   leftUrl: string;
   rightUrl: string;
+  bounds?: [number, number, number, number];
 }
 
-function SideBySideControl({ leftUrl, rightUrl }: { leftUrl: string, rightUrl: string }) {
+function SideBySideControl({ leftUrl, rightUrl, bounds }: { leftUrl: string, rightUrl: string, bounds: L.LatLngBoundsExpression }) {
   const map = useMap();
   const controlRef = useRef<any>(null);
   
@@ -335,8 +336,8 @@ function SideBySideControl({ leftUrl, rightUrl }: { leftUrl: string, rightUrl: s
       document.head.appendChild(styleTag);
     }
 
-    const bounds: L.LatLngBoundsExpression = [[0, 0], [1000, 1000]];
-    map.fitBounds(bounds);
+    // @ts-ignore
+    map.fitBounds(L.latLngBounds(bounds));
 
     const leftLayer = L.imageOverlay(leftUrl, bounds, { opacity: 1, crossOrigin: "anonymous" }).addTo(map);
     const rightLayer = L.imageOverlay(rightUrl, bounds, { opacity: 1, crossOrigin: "anonymous" }).addTo(map);
@@ -351,25 +352,32 @@ function SideBySideControl({ leftUrl, rightUrl }: { leftUrl: string, rightUrl: s
       map.removeLayer(leftLayer);
       map.removeLayer(rightLayer);
     };
-  }, [map, leftUrl, rightUrl]);
+  }, [map, leftUrl, rightUrl, bounds]);
 
   return null;
 }
 
-export default function LeafletCompareMap({ leftUrl, rightUrl }: LeafletCompareMapProps) {
-  const bounds: L.LatLngBoundsExpression = [[0, 0], [1000, 1000]];
+import { TileLayer } from 'react-leaflet';
+
+export default function LeafletCompareMap({ leftUrl, rightUrl, bounds }: LeafletCompareMapProps) {
+  const mapBounds: L.LatLngBoundsExpression = bounds 
+    ? [[bounds[0], bounds[1]], [bounds[2], bounds[3]]]
+    : [[8.4, 68.7], [37.6, 97.25]];
 
   return (
     <MapContainer 
-      crs={L.CRS.Simple}
-      bounds={bounds} 
+      bounds={mapBounds} 
       className="w-full h-full z-0 bg-[#0a0a0a]"
       zoomControl={true}
-      minZoom={-2}
-      maxZoom={4}
+      minZoom={2}
+      maxZoom={10}
       style={{ height: '100%', width: '100%', minHeight: '500px' }}
     >
-      <SideBySideControl leftUrl={leftUrl} rightUrl={rightUrl} />
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      />
+      <SideBySideControl leftUrl={leftUrl} rightUrl={rightUrl} bounds={mapBounds} />
     </MapContainer>
   );
 }

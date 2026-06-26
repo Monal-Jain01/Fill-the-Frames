@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
-import { MapContainer, ImageOverlay, useMap } from 'react-leaflet';
+import React, { useEffect, useRef, useState } from 'react';
+import { MapContainer, ImageOverlay, useMap, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { DifferenceMapData } from '../types';
 import { BASE_URL } from '@/lib/api/base-client';
+import { visualizationClient } from '@/lib/api/visualization-client';
 
 interface DifferenceMapViewerProps {
   differenceMap: DifferenceMapData;
@@ -15,6 +16,8 @@ interface DifferenceMapViewerProps {
   /** @deprecated kept for backwards-compat with Plotly-era callers */
   onRelayout?: (...args: unknown[]) => void;
   isFullscreen: boolean;
+  fileIdForBounds?: string | null;
+  variable?: string;
 }
 
 /** Auto-fit the map to the image bounds whenever the URL changes */
@@ -35,14 +38,29 @@ export function DifferenceMapViewer({
   differenceMap,
   errorMapUrl,
   isFullscreen,
+  fileIdForBounds,
+  variable,
 }: DifferenceMapViewerProps) {
   const heightClass = isFullscreen ? 'h-[80vh]' : 'h-[60vh] min-h-[500px]';
+  const [boundsData, setBoundsData] = useState<[number, number, number, number] | undefined>(undefined);
+
+  useEffect(() => {
+    if (fileIdForBounds) {
+      visualizationClient.getBounds(fileIdForBounds, variable || "C13").then(res => {
+        if (res.success && res.data) {
+          setBoundsData([res.data.min_lat, res.data.min_lon, res.data.max_lat, res.data.max_lon]);
+        }
+      }).catch(console.error);
+    }
+  }, [fileIdForBounds, variable]);
 
   const fullUrl = errorMapUrl
     ? (errorMapUrl.startsWith('http') ? errorMapUrl : `${BASE_URL}${errorMapUrl}`)
     : null;
 
-  const bounds: L.LatLngBoundsExpression = [[0, 0], [1000, 1000]];
+  const mapBounds: L.LatLngBoundsExpression = boundsData 
+    ? [[boundsData[0], boundsData[1]], [boundsData[2], boundsData[3]]]
+    : [[8.4, 68.7], [37.6, 97.25]];
 
   return (
     <div className={`w-full ${heightClass} border rounded-lg overflow-hidden bg-background relative flex flex-col`}>
@@ -52,19 +70,22 @@ export function DifferenceMapViewer({
 
       {fullUrl ? (
         <MapContainer
-          crs={L.CRS.Simple}
-          bounds={bounds}
+          bounds={mapBounds}
           className="flex-1 w-full z-0 bg-[#0a0a0a]"
           zoomControl={true}
-          minZoom={-2}
-          maxZoom={4}
+          minZoom={2}
+          maxZoom={10}
           style={{ height: '100%', width: '100%' }}
         >
-          <FitBounds bounds={bounds} />
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          />
+          <FitBounds bounds={mapBounds} />
           <ImageOverlay
             url={fullUrl}
-            bounds={bounds}
-            opacity={1}
+            bounds={mapBounds}
+            opacity={0.8}
             // @ts-ignore — crossOrigin is valid on ImageOverlay
             crossOrigin="anonymous"
           />

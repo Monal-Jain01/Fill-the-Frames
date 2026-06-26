@@ -12,6 +12,8 @@ interface ValidationState {
   groundTruthFilename: string | null;
   metricsComputed: boolean;
   
+  selectedVariable: string | null;
+  
   groundTruthMetadata: MetadataResponse | null;
   metadataLoading: boolean;
   metadataError: string | null;
@@ -38,6 +40,7 @@ interface ValidationState {
   setMetadataState: (state: Partial<Pick<ValidationState, 'groundTruthMetadata' | 'metadataLoading' | 'metadataError'>>) => void;
   setValidationState: (state: Partial<Pick<ValidationState, 'validationPair' | 'alignedGenerated' | 'alignedGroundTruth' | 'differenceMap' | 'validationLoading' | 'validationError'>>) => void;
   setMetricsState: (state: Partial<Pick<ValidationState, 'metrics' | 'metricsLoading' | 'metricsError'>>) => void;
+  setSelectedVariable: (variable: string | null) => void;
   reset: () => void;
 }
 
@@ -48,6 +51,7 @@ export const useValidationStore = create<ValidationState>()(
       artifactId: null,
       groundTruthFileId: null,
       groundTruthFilename: null,
+      selectedVariable: null,
       metricsComputed: false,
       
       groundTruthMetadata: null,
@@ -75,11 +79,13 @@ export const useValidationStore = create<ValidationState>()(
       setMetadataState: (newState) => set((state) => ({ ...state, ...newState })),
       setValidationState: (newState) => set((state) => ({ ...state, ...newState })),
       setMetricsState: (newState) => set((state) => ({ ...state, ...newState })),
+      setSelectedVariable: (variable) => set({ selectedVariable: variable }),
       reset: () => set({
         currentStep: 1,
         artifactId: null,
         groundTruthFileId: null,
         groundTruthFilename: null,
+        selectedVariable: null,
         metricsComputed: false,
         groundTruthMetadata: null,
         metadataLoading: false,
@@ -102,6 +108,7 @@ export const useValidationStore = create<ValidationState>()(
         artifactId: state.artifactId,
         groundTruthFileId: state.groundTruthFileId,
         groundTruthFilename: state.groundTruthFilename,
+        selectedVariable: state.selectedVariable,
         metricsComputed: state.metricsComputed,
         groundTruthMetadata: state.groundTruthMetadata,
         validationPair: state.validationPair,
