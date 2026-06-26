@@ -4,12 +4,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, ImageOverlay, useMap, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { DifferenceMapData } from '../types';
 import { BASE_URL } from '@/lib/api/base-client';
 import { visualizationClient } from '@/lib/api/visualization-client';
 
 interface DifferenceMapViewerProps {
-  differenceMap: DifferenceMapData;
+  band: string;
   errorMapUrl?: string | null;
   /** @deprecated kept for backwards-compat with Plotly-era callers */
   sharedLayout?: Record<string, unknown>;
@@ -35,7 +34,7 @@ function FitBounds({ bounds }: { bounds: L.LatLngBoundsExpression }) {
 }
 
 export function DifferenceMapViewer({
-  differenceMap,
+  band,
   errorMapUrl,
   isFullscreen,
   fileIdForBounds,
@@ -66,7 +65,7 @@ export function DifferenceMapViewer({
   return (
     <div className={`w-full ${heightClass} border rounded-lg overflow-hidden bg-background relative flex flex-col`}>
       <div className="absolute top-4 left-4 z-[1000] bg-background/90 backdrop-blur px-3 py-2 rounded text-sm font-semibold shadow-md border">
-        {differenceMap.band} (Error/Diff Map)
+        {band} (Error/Diff Map)
       </div>
 
       {fullUrl ? (

@@ -11,20 +11,19 @@ const LeafletCompareMap = dynamic(
 );
 
 export function ValidationViewer() {
-  const { artifactId, groundTruthFileId, selectedVariable } = useValidationStore();
+  const { artifactId, groundTruthFileId, selectedVariable, bounds: storeBounds } = useValidationStore();
   const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
 
   const varName = selectedVariable || "C13";
 
+  // Read authoritative bounds directly from the Orchestration metadata.
   useEffect(() => {
-    if (artifactId) {
-      visualizationClient.getBounds(artifactId, varName).then(res => {
-        if (res.success && res.data && typeof res.data.min_lat === 'number') {
-          setBounds([res.data.min_lat, res.data.min_lon, res.data.max_lat, res.data.max_lon]);
-        }
-      }).catch(console.error);
+    if (storeBounds && storeBounds.bounds) {
+      const b = storeBounds.bounds as [[number, number], [number, number]];
+      // Extract from [[south, west], [north, east]]
+      setBounds([b[0][0], b[0][1], b[1][0], b[1][1]]);
     }
-  }, [artifactId, varName]);
+  }, [storeBounds]);
 
   if (!artifactId || !groundTruthFileId) {
     return (

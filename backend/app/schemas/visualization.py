@@ -42,3 +42,14 @@ class MapBoundsResponse(BaseModel):
                 "bounds": [[8.0, 68.0], [37.0, 97.0]]
             }
         }
+
+class FrameDataResponse(BaseModel):
+    file_id: str
+    variable: str
+    time_index: int
+    shape: List[int]
+    min: float
+    max: float
+    mean: float
+    std: float
+    z: List[List[float]]

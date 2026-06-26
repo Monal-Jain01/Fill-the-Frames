@@ -16,7 +16,7 @@ const DifferenceMapViewer = dynamic(
 import { MetricsDashboard } from '@/features/metrics/components/metrics-dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DifferenceMapData } from '@/features/comparison/types';
+// No DifferenceMapData import needed
 import { useMetadata } from '@/features/metadata/hooks/use-metadata';
 
 import { useValidation } from '@/features/validation/hooks/use-validation';
@@ -26,29 +26,13 @@ import { Loader2 } from 'lucide-react';
 import { visualizationClient } from '@/lib/api/visualization-client';
 import { exportClient } from '@/lib/api/export-client';
 
-const dummyDifferenceMap: DifferenceMapData = {
-  id: 'dummy',
-  type: 'T0.5',
-  timestamp: new Date().toISOString(),
-  band: 'TIR1',
-  resolution: '1km',
-  dimensions: [0, 0],
-  data: [],
-  min: 0,
-  max: 0,
-  meanDifference: 0,
-  maxDifference: 0,
-  minDifference: 0,
-  stdDeviation: 0,
-  similarityScore: 0
-};
 
 export function ValidationWorkflowWrapper() {
   const store = useValidationStore();
   const { currentStep, nextStep, prevStep, setArtifactId, setGroundTruthFileId, setGroundTruthFilename } = store;
   const [tempArtifactId, setTempArtifactId] = useState(store.artifactId || '');
   const { fetchValidationMetadata } = useMetadata();
-  const { alignFrames } = useValidation();
+  const { prepareValidation } = useValidation();
 
   // React.useEffect(() => {
   //   if (store.artifactId && store.currentStep === 1) {
@@ -119,7 +103,7 @@ export function ValidationWorkflowWrapper() {
                store.setSelectedVariable(availableVariables[0]);
             }
             nextStep();
-            await alignFrames();
+            await prepareValidation();
           }}>Proceed to Visual Inspection</Button>
         </div>
       </div>
@@ -179,7 +163,7 @@ export function ValidationWorkflowWrapper() {
           ) : store.validationError ? (
             <div className="flex flex-col items-center justify-center p-12 text-destructive h-[500px] border rounded-lg border-destructive/50 bg-destructive/5">
               <p>Validation Failed: {store.validationError}</p>
-              <Button variant="outline" className="mt-4" onClick={alignFrames}>Retry Alignment</Button>
+              <Button variant="outline" className="mt-4" onClick={prepareValidation}>Retry Alignment</Button>
             </div>
           ) : (
             <ValidationViewer />
@@ -196,20 +180,26 @@ export function ValidationWorkflowWrapper() {
       description: 'Spatial Error Map',
       component: (
         <div className="space-y-6">
-           <DifferenceMapViewer 
-             differenceMap={store.differenceMap || dummyDifferenceMap}
-             errorMapUrl={
-               store.validationPair 
-                 ? visualizationClient.getErrorMapLayerUrl(store.validationPair.groundTruthId, store.validationPair.generatedId, store.selectedVariable || "C13", 0)
-                 : null
-             }
-             fileIdForBounds={store.validationPair?.groundTruthId}
-             variable={store.selectedVariable || "C13"}
-             isFullscreen={false}
-           />
+           {store.validationPair ? (
+             <DifferenceMapViewer 
+               band={store.selectedVariable || "C13"}
+               errorMapUrl={
+                 store.validationPair 
+                   ? visualizationClient.getErrorMapLayerUrl(store.validationPair.groundTruthId, store.validationPair.generatedId, store.selectedVariable || "C13", 0)
+                   : null
+               }
+               fileIdForBounds={store.validationPair?.groundTruthId}
+               variable={store.selectedVariable || "C13"}
+               isFullscreen={false}
+             />
+           ) : (
+             <div className="w-full h-[500px] flex items-center justify-center bg-muted/10 border rounded-lg text-muted-foreground">
+               {store.validationError || "No difference map data available. Please align frames first."}
+             </div>
+           )}
            <div className="flex justify-center pt-4">
-            <Button onClick={nextStep}>Compute Metrics</Button>
-          </div>
+             <Button onClick={nextStep} disabled={!store.validationPair}>Compute Metrics</Button>
+           </div>
         </div>
       ),
     },

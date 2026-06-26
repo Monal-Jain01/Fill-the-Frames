@@ -1,6 +1,9 @@
 import logging
 from typing import Dict, Any
 from fastapi import HTTPException
+# DEPRECATED: Validation orchestration has been moved to the frontend via the stateless Visualization and Metrics services.
+# This service is preserved for potential future architectural requirements involving raw spatial data arrays.
+
 import numpy as np
 
 from app.schemas.visualization import FrameDataResponse
@@ -98,7 +101,11 @@ class ValidationService:
                     max=diff_max
                 ),
                 dimensions=list(frame_gen_view.shape),
-                metadata={"status": "aligned", "downsample": downsample}
+                metadata={
+                    "status": "aligned",
+                    "downsample": downsample,
+                    "bounds": VisualizationService.get_map_bounds(ground_truth_file_id, variable).get("bounds")
+                }
             )
 
         except HTTPException:

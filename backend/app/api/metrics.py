@@ -7,7 +7,7 @@ from app.services.scientific.metrics import MetricsService
 router = APIRouter()
 
 
-@router.get("/compare", response_model=ApiResponse)
+@router.get("/compare", response_model=ApiResponse[dict])
 async def compare_images(
     generated_file_id: str = Query(..., description="ID of the AI Generated Dataset"),
     truth_file_id: str = Query(
@@ -34,6 +34,4 @@ async def compare_images(
         raise
     except Exception as e:
         logger.exception("Failed to calculate metrics")
-        return ApiResponse(
-            success=False, message=f"Failed to calculate metrics: {str(e)}", data=None
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to calculate metrics: {str(e)}")

@@ -1,3 +1,6 @@
+# DEPRECATED: Validation orchestration has been moved to the frontend via the stateless Visualization and Metrics services.
+# This router is unmounted and preserved for potential future architectural requirements involving raw spatial data arrays.
+
 from fastapi import APIRouter, HTTPException, Body
 from loguru import logger
 from app.schemas.common import ApiResponse
@@ -6,7 +9,7 @@ from app.services.scientific.validation_service import ValidationService
 
 router = APIRouter()
 
-@router.post("/align", response_model=ApiResponse)
+@router.post("/align", response_model=ApiResponse[ValidationAlignmentResponse])
 async def align_frames(request: ValidationAlignmentRequest = Body(...)):
     """
     Aligns a generated artifact with a ground truth observation.
@@ -25,6 +28,4 @@ async def align_frames(request: ValidationAlignmentRequest = Body(...)):
         )
     except Exception as e:
         logger.exception("Failed to align frames")
-        return ApiResponse(
-            success=False, message=f"Failed to align frames: {str(e)}", data=None
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to align frames: {str(e)}")

@@ -1,18 +1,25 @@
 import { useValidationStore } from '@/store/validation-store';
 import { validationClient } from '@/lib/api/validation-client';
+import { visualizationClient } from '@/lib/api/visualization-client';
 
 export function useValidation() {
   const store = useValidationStore();
 
-  const alignFrames = async () => {
+  const fetchBoundsAndPrepare = async () => {
     if (!store.artifactId || !store.groundTruthFileId) return;
 
     store.setValidationState({ validationLoading: true, validationError: null });
 
     try {
-      // Mocking alignment delay since backend doesn't have the /validation/align route yet
-      // The Leaflet images handle visual stacking using precise map bounds directly.
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Fetch authoritative bounding box from the ground truth file
+      const boundsResponse = await visualizationClient.getBounds(
+        store.groundTruthFileId, 
+        store.selectedVariable || "C13"
+      );
+
+      if (!boundsResponse.success || !boundsResponse.data) {
+        throw new Error(boundsResponse.message || "Failed to retrieve bounds.");
+      }
 
       store.setValidationState({
         validationLoading: false,
@@ -20,16 +27,14 @@ export function useValidation() {
           generatedId: store.artifactId,
           groundTruthId: store.groundTruthFileId,
         },
-        alignedGenerated: null,   // We don't need pure JSON data; we use layerUrl now
-        alignedGroundTruth: null, // We don't need pure JSON data; we use layerUrl now
-        differenceMap: null,      // We use getErrorMapLayerUrl now instead of JSON
+        bounds: boundsResponse.data,
       });
 
-      // Trigger metrics computation immediately after alignment
+      // Trigger metrics computation immediately after setting up bounds
       computeMetrics();
       
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : 'An error occurred during alignment';
+      const errorMsg = err instanceof Error ? err.message : 'An error occurred during preparation';
       store.setValidationState({
         validationLoading: false,
         validationError: errorMsg,
@@ -64,6 +69,6 @@ export function useValidation() {
   };
 
   return {
-    alignFrames,
+    prepareValidation: fetchBoundsAndPrepare,
   };
 }

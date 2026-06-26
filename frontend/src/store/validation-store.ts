@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MetadataResponse } from '@/features/metadata/types';
-import { FrameDataResponse } from '@/features/visualization/types';
-import { DifferenceMapData } from '@/features/comparison/types';
+import { MapBoundsResponse } from '@/features/visualization/types';
 import { MetricsResponse } from '@/lib/api/validation-client';
 
 interface ValidationState {
@@ -19,9 +18,7 @@ interface ValidationState {
   metadataError: string | null;
 
   validationPair: { generatedId: string, groundTruthId: string } | null;
-  alignedGenerated: FrameDataResponse | null;
-  alignedGroundTruth: FrameDataResponse | null;
-  differenceMap: DifferenceMapData | null;
+  bounds: MapBoundsResponse | null;
 
   validationLoading: boolean;
   validationError: string | null;
@@ -38,7 +35,7 @@ interface ValidationState {
   setGroundTruthFilename: (filename: string | null) => void;
   setMetricsComputed: (computed: boolean) => void;
   setMetadataState: (state: Partial<Pick<ValidationState, 'groundTruthMetadata' | 'metadataLoading' | 'metadataError'>>) => void;
-  setValidationState: (state: Partial<Pick<ValidationState, 'validationPair' | 'alignedGenerated' | 'alignedGroundTruth' | 'differenceMap' | 'validationLoading' | 'validationError'>>) => void;
+  setValidationState: (state: Partial<Pick<ValidationState, 'validationPair' | 'bounds' | 'validationLoading' | 'validationError'>>) => void;
   setMetricsState: (state: Partial<Pick<ValidationState, 'metrics' | 'metricsLoading' | 'metricsError'>>) => void;
   setSelectedVariable: (variable: string | null) => void;
   initializeFromInterpolation: (artifactId: string) => void;
@@ -60,9 +57,7 @@ export const useValidationStore = create<ValidationState>()(
       metadataError: null,
 
       validationPair: null,
-      alignedGenerated: null,
-      alignedGroundTruth: null,
-      differenceMap: null,
+      bounds: null,
       validationLoading: false,
       validationError: null,
 
@@ -94,9 +89,7 @@ export const useValidationStore = create<ValidationState>()(
           metadataLoading: false,
           metadataError: null,
           validationPair: null,
-          alignedGenerated: null,
-          alignedGroundTruth: null,
-          differenceMap: null,
+          bounds: null,
           validationLoading: false,
           validationError: null,
           metrics: null,
@@ -115,9 +108,7 @@ export const useValidationStore = create<ValidationState>()(
         metadataLoading: false,
         metadataError: null,
         validationPair: null,
-        alignedGenerated: null,
-        alignedGroundTruth: null,
-        differenceMap: null,
+        bounds: null,
         validationLoading: false,
         validationError: null,
         metrics: null,

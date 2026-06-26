@@ -1,11 +1,13 @@
 from pydantic import BaseModel
-from typing import Any
 from datetime import datetime
+from typing import Any, Generic, TypeVar, Optional
 
-class ApiResponse(BaseModel):
+T = TypeVar("T")
+
+class ApiResponse(BaseModel, Generic[T]):
     success: bool
     message: str
-    data: Any
+    data: Optional[T] = None
 
 class FrameData(BaseModel):
     frame_id: str
