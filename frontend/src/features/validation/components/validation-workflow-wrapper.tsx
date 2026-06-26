@@ -18,6 +18,7 @@ import { useValidation } from '@/features/validation/hooks/use-validation';
 import { MetadataSummary } from '@/features/metadata/components/metadata-summary';
 import { MetadataVariableList } from '@/features/metadata/components/metadata-variable-list';
 import { Loader2 } from 'lucide-react';
+import { visualizationClient } from '@/lib/api/visualization-client';
 
 const dummyDifferenceMap: DifferenceMapData = {
   id: 'dummy',
@@ -168,6 +169,11 @@ export function ValidationWorkflowWrapper() {
         <div className="space-y-6">
            <DifferenceMapViewer 
              differenceMap={store.differenceMap || dummyDifferenceMap}
+             errorMapUrl={
+               store.validationPair 
+                 ? visualizationClient.getErrorMapLayerUrl(store.validationPair.groundTruthId, store.validationPair.generatedId, "C13", 0)
+                 : null
+             }
              sharedLayout={{}}
              onRelayout={() => {}}
              isFullscreen={false}
