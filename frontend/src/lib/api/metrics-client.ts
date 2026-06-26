@@ -8,6 +8,8 @@ export interface MetricsCompareRequest {
 }
 
 export const metricsClient = {
-  compare: (request: MetricsCompareRequest): Promise<MetricsResponse> =>
-    api.get("/metrics/compare", { params: request as any }),
+  compare: async (request: MetricsCompareRequest): Promise<MetricsResponse> => {
+    const res = await api.get<{ data: MetricsResponse }>("/metrics/compare", { params: request as any });
+    return (res as any).data ?? res;
+  },
 };

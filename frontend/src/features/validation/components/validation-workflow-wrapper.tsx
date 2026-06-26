@@ -7,7 +7,11 @@ import { WorkflowNavigation } from '@/components/common/workflow-navigation';
 import { UploadDropzone } from '@/features/upload/components/UploadDropzone';
 import { MetadataOverview } from '@/features/metadata/components/metadata-overview';
 import { ValidationViewer } from './validation-viewer';
-import { DifferenceMapViewer } from '@/features/comparison/components/difference-map-viewer';
+import dynamic from 'next/dynamic';
+const DifferenceMapViewer = dynamic(
+  () => import('@/features/comparison/components/difference-map-viewer').then(mod => mod.DifferenceMapViewer),
+  { ssr: false, loading: () => <div className="w-full h-[500px] flex items-center justify-center animate-pulse bg-muted">Loading map...</div> }
+);
 import { MetricsDashboard } from '@/features/metrics/components/metrics-dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

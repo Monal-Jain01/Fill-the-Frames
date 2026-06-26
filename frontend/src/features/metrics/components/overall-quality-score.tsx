@@ -9,17 +9,19 @@ interface OverallQualityScoreProps {
 }
 
 export function OverallQualityScore({ metrics }: OverallQualityScoreProps) {
+  const score = typeof metrics.quality_score === 'number' ? metrics.quality_score : 0;
+
   // We can calculate a color band based on the backend quality score
   let statusColor = "text-red-500";
   let statusText = "Poor";
   
-  if (metrics.quality_score >= 90) {
+  if (score >= 90) {
     statusColor = "text-emerald-500";
     statusText = "Excellent";
-  } else if (metrics.quality_score >= 75) {
+  } else if (score >= 75) {
     statusColor = "text-blue-500";
     statusText = "Good";
-  } else if (metrics.quality_score >= 50) {
+  } else if (score >= 50) {
     statusColor = "text-amber-500";
     statusText = "Fair";
   }
@@ -37,7 +39,7 @@ export function OverallQualityScore({ metrics }: OverallQualityScoreProps) {
               Overall Validation Score
             </h3>
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-black">{metrics.quality_score}</span>
+              <span className="text-5xl font-black">{score}</span>
               <span className="text-xl text-muted-foreground">/ 100</span>
             </div>
             <p className="text-sm text-muted-foreground">{metrics.summary}</p>

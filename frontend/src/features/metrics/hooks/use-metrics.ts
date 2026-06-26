@@ -27,10 +27,12 @@ export function useMetrics(truthFileIdProp?: string, generatedFileIdProp?: strin
           });
 
           if (res) {
+             const safeFixed = (val: unknown, digits: number) =>
+               typeof val === 'number' ? Number(val.toFixed(digits)) : 0;
              const mData: MetricData[] = [
-               { id: 'psnr', type: 'PSNR', category: 'Signal', value: Number(res.psnr?.toFixed(2)) || 0, maxScore: 100, status: 'good', description: 'Peak Signal-to-Noise Ratio' },
-               { id: 'ssim', type: 'SSIM', category: 'Structural', value: Number(res.ssim?.toFixed(4)) || 0, maxScore: 1, status: 'good', description: 'Structural Similarity Index Measure' },
-               { id: 'mse', type: 'MSE', category: 'Signal', value: Number(res.mse?.toFixed(4)) || 0, maxScore: 0, status: 'acceptable', description: 'Mean Squared Error' },
+               { id: 'psnr', type: 'PSNR', category: 'Signal', value: safeFixed(res.psnr, 2), maxScore: 100, status: 'good', description: 'Peak Signal-to-Noise Ratio' },
+               { id: 'ssim', type: 'SSIM', category: 'Structural', value: safeFixed(res.ssim, 4), maxScore: 1, status: 'good', description: 'Structural Similarity Index Measure' },
+               { id: 'mse', type: 'MSE', category: 'Signal', value: safeFixed(res.mse, 4), maxScore: 0, status: 'acceptable', description: 'Mean Squared Error' },
              ];
              setMetrics(mData);
              setTrend(MOCK_TREND_DATA);

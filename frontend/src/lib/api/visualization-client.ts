@@ -35,10 +35,10 @@ export const visualizationClient = {
   },
 
   getLayerUrl: (fileId: string, variable: string, timestamp: number = 0): string => {
-    return `/visualization/${fileId}/layer?variable=${variable}&timestamp=${timestamp}`;
+    return `${BASE_URL}/visualization/${fileId}/layer?variable=${encodeURIComponent(variable)}&timestamp=${timestamp}`;
   },
 
   getErrorMapLayerUrl: (fileId1: string, fileId2: string, variable: string, timestamp: number = 0): string => {
-    return `/visualization/error-map/layer?actual_file_id=${fileId1}&ai_file_id=${fileId2}&variable=${variable}&timestamp=${timestamp}`;
+    return `${BASE_URL}/visualization/error-map/layer?actual_file_id=${fileId1}&ai_file_id=${fileId2}&variable=${encodeURIComponent(variable)}&timestamp=${timestamp}`;
   }
 };
