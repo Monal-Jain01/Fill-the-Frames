@@ -189,12 +189,20 @@ function createSideBySide() {
       if (!this._map) {
         return this;
       }
-      if (this._leftLayer) {
-        this._leftLayer.getContainer().style.clip = '';
-      }
-      if (this._rightLayer) {
-        this._rightLayer.getContainer().style.clip = '';
-      }
+
+      const getLayerElement = (layer: any) => {
+        if (!layer) return null;
+        if (typeof layer.getContainer === 'function') return layer.getContainer();
+        if (typeof layer.getElement === 'function') return layer.getElement();
+        return null;
+      };
+
+      const leftEl = getLayerElement(this._leftLayer);
+      if (leftEl) leftEl.style.clip = '';
+
+      const rightEl = getLayerElement(this._rightLayer);
+      if (rightEl) rightEl.style.clip = '';
+
       this._removeEvents();
       L.DomUtil.remove(this._container);
 
@@ -226,12 +234,19 @@ function createSideBySide() {
       this.fire('dividermove', { x: dividerX });
       const clipLeft = 'rect(' + [nw.y, clipX, se.y, nw.x].join('px,') + 'px)';
       const clipRight = 'rect(' + [nw.y, se.x, se.y, clipX].join('px,') + 'px)';
-      if (this._leftLayer && this._leftLayer.getContainer()) {
-        this._leftLayer.getContainer().style.clip = clipLeft;
-      }
-      if (this._rightLayer && this._rightLayer.getContainer()) {
-        this._rightLayer.getContainer().style.clip = clipRight;
-      }
+
+      const getLayerElement = (layer: any) => {
+        if (!layer) return null;
+        if (typeof layer.getContainer === 'function') return layer.getContainer();
+        if (typeof layer.getElement === 'function') return layer.getElement();
+        return null;
+      };
+
+      const leftEl = getLayerElement(this._leftLayer);
+      if (leftEl) leftEl.style.clip = clipLeft;
+
+      const rightEl = getLayerElement(this._rightLayer);
+      if (rightEl) rightEl.style.clip = clipRight;
     },
 
     _updateLayers: function (this: any) {
