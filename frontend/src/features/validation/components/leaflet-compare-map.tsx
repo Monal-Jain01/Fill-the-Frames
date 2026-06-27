@@ -368,12 +368,10 @@ export default function LeafletCompareMap({ leftUrl, rightUrl, bounds }: Leaflet
   return (
     <MapContainer 
       bounds={mapBounds}
-      maxBounds={mapBounds}
-      maxBoundsViscosity={1.0}
       className="w-full h-full z-0 bg-[#0a0a0a]"
       zoomControl={true}
-      minZoom={3}
-      maxZoom={10}
+      minZoom={2}
+      maxZoom={12}
       style={{ height: '100%', width: '100%', minHeight: '500px' }}
     >
       <TileLayer
