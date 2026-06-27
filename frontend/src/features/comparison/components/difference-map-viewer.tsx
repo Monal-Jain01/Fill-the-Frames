@@ -28,7 +28,7 @@ function FitBounds({ bounds }: { bounds: L.LatLngBoundsExpression }) {
 
   useEffect(() => {
     boundsRef.current = bounds;
-    // @ts-ignore - Leaflet types are notoriously picky about bounds arrays
+    // @ts-expect-error - Leaflet types are notoriously picky about bounds arrays
     map.fitBounds(L.latLngBounds(bounds), { animate: false });
   }, [map, bounds]);
 
@@ -94,7 +94,6 @@ export function DifferenceMapViewer({
             url={fullUrl}
             bounds={mapBounds}
             opacity={0.8}
-            // @ts-ignore — crossOrigin is valid on ImageOverlay
             crossOrigin="anonymous"
           />
         </MapContainer>

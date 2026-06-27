@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { PlotMouseEvent, PlotDatum } from 'plotly.js';
+
 import { ColorMap, FrameType, PixelData } from '../types';
 import { VISUALIZATION_DEFAULTS } from '../constants';
 import { useInterpolationStore } from '@/store/interpolation-store';
@@ -39,7 +39,7 @@ export function useVisualization(fileId?: string | null) {
     const fetchVariables = async () => {
       try {
         const res = await visualizationClient.getAvailableVariables(fileId);
-        if (res.success && res.data.length > 0) {
+        if (res.success && res.data && res.data.length > 0) {
           store.setVisState({ availableVariables: res.data });
           if (!selectedVariable) {
             store.setVisState({ selectedVariable: res.data[0] });
@@ -62,7 +62,7 @@ export function useVisualization(fileId?: string | null) {
         store.setVisState({ visLoading: true, visError: null });
         
         // Generate layer url
-        const url = visualizationClient.getLayerUrl(fileId, selectedVariable, selectedTimeIndex);
+        const url = visualizationClient.getLayerUrl(fileId, selectedVariable);
         setLayerUrl(url);
 
         // Fetch bounds
@@ -83,10 +83,10 @@ export function useVisualization(fileId?: string | null) {
         // Backend only has images right now, getFrame might throw 404, we catch it silently.
         try {
           const res = await visualizationClient.getFrame(fileId, selectedVariable, selectedTimeIndex);
-          if (res.success) {
+          if (res.success && res.data) {
             store.setVisState({ currentFrame: res.data, visLoading: false });
           }
-        } catch(err) {
+        } catch {
            store.setVisState({ visLoading: false }); // image layer takes priority
         }
 
@@ -104,9 +104,11 @@ export function useVisualization(fileId?: string | null) {
 
   const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
 
-  const handleHover = (event: Readonly<PlotMouseEvent>) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleHover = (event: any) => {
     if (event.points && event.points[0]) {
-      const pt = event.points[0] as PlotDatum & { z?: number };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pt = event.points[0] as any;
       setPixelData({
         x: pt.x as number,
         y: pt.y as number,

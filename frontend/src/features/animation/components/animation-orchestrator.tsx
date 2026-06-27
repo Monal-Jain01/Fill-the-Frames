@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useInterpolationStore } from "@/store/interpolation-store";
 import { useAnimationStore } from "@/store/animation-store";
 import { visualizationClient } from "@/lib/api/visualization-client";
@@ -19,7 +19,7 @@ const preloadImage = (src: string): Promise<boolean> => {
 export function AnimationOrchestrator() {
   const { t0FileId, t1FileId, outputFileId, t0Metadata, t1Metadata } = useInterpolationStore();
   const { setFrames, setLoading, setError, selectedVariable, cachedBounds, setCachedBounds } = useAnimationStore();
-  const [orchestrated, setOrchestrated] = useState(false);
+
   const prevVariable = useRef(selectedVariable);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function AnimationOrchestrator() {
     // We only orchestrate if we have the workflow file IDs
     if (!t0FileId || !t1FileId) {
       setFrames([]);
-      setOrchestrated(true);
+
       return;
     }
 
@@ -47,14 +47,17 @@ export function AnimationOrchestrator() {
         if (!boundsData) {
           const boundsRes = await visualizationClient.getBounds(t0FileId, varToFetch);
           if (boundsRes.data?.bounds) {
-            boundsData = boundsRes.data.bounds as any;
-            setCachedBounds(t0FileId, boundsData as any);
+            boundsData = boundsRes.data.bounds as [[number, number], [number, number]];
+            setCachedBounds(t0FileId, boundsData);
           }
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const parseTimestamp = (metadata: any, defaultStr: string) => {
           if (!metadata?.attributes) return defaultStr;
-          const ts = metadata.attributes.time_coverage_start || metadata.attributes.start_date;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const attrs = metadata.attributes as any;
+          const ts = attrs.time_coverage_start || attrs.start_date;
           return ts ? ts.toString() : defaultStr;
         };
 
@@ -103,14 +106,14 @@ export function AnimationOrchestrator() {
         }
 
         setFrames(verifiedSequence);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to orchestrate animation:", err);
-        setError(err.message || "Failed to load animation sequence");
+        setError(err instanceof Error ? err.message : "Failed to load animation sequence");
         // Keep existing frames if variable switch failed, or clear if first load
         if (!variableChanged) setFrames([]);
       } finally {
         setLoading(false);
-        setOrchestrated(true);
+        setLoading(false);
       }
     };
 

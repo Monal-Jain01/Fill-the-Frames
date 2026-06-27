@@ -1,4 +1,3 @@
-import { ApiResponse } from "@/types/api";
 import { BASE_URL } from "./base-client";
 
 export interface MetricsCompareRequest {

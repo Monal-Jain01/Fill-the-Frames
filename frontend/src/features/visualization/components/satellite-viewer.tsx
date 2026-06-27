@@ -3,7 +3,7 @@
 import React, { useImperativeHandle, forwardRef, useState } from 'react';
 import { FrameDataResponse, ColorMap } from '../types';
 import dynamic from 'next/dynamic';
-import { LatLngBoundsExpression } from 'leaflet';
+
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://sid385-fill-the-frames.hf.space/api/v1";
 
@@ -17,6 +17,7 @@ interface SatelliteViewerProps {
   bounds?: [number, number, number, number];
   colorMap?: ColorMap;
   data?: FrameDataResponse | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onHover?: (e: any) => void;
   onUnhover?: () => void;
 }
@@ -45,10 +46,6 @@ export const SatelliteViewer = forwardRef<SatelliteViewerRef, SatelliteViewerPro
 
     const fullUrl = layerUrl.startsWith('http') ? layerUrl : `${BASE_URL}${layerUrl}`;
 
-    let mapBounds: LatLngBoundsExpression = [[-10, 40], [50, 110]];
-    if (bounds && bounds.length === 4) {
-      mapBounds = [[bounds[0], bounds[1]], [bounds[2], bounds[3]]];
-    }
 
     return (
       <div className="relative w-full h-full min-h-[400px] md:min-h-[600px] border rounded-lg overflow-hidden bg-[#0a0a0a]">

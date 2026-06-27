@@ -33,7 +33,7 @@ export const visualizationClient = {
     return response.json();
   },
 
-  getLayerUrl: (fileId: string, variable: string, _timeIndex: number = 0): string => {
+  getLayerUrl: (fileId: string, variable: string): string => {
     return `${BASE_URL}/visualization/${fileId}/layer?variable=${encodeURIComponent(variable)}`;
   },
 

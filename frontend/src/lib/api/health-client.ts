@@ -16,6 +16,9 @@ async function fetchHealth<T>(path: string): Promise<T> {
     throw new ApiError(`Request failed with status ${response.status}`, response.status);
   }
   const result = await response.json() as ApiResponse<T>;
+  if (!result.data) {
+    throw new ApiError(`Response missing data for ${path}`, 500);
+  }
   return result.data;
 }
 

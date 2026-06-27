@@ -14,7 +14,7 @@ interface LeafletMapProps {
 function ResetControl({ resetTrigger, bounds }: { resetTrigger: number, bounds: L.LatLngBoundsExpression }) {
   const map = useMap();
   useEffect(() => {
-    // @ts-ignore
+    // @ts-expect-error Leaflet types are notoriously picky about bounds arrays
     map.fitBounds(L.latLngBounds(bounds), { animate: true });
   }, [resetTrigger, map, bounds]);
   return null;
@@ -45,7 +45,6 @@ export default function LeafletMap({ url, resetTrigger, bounds }: LeafletMapProp
         url={url}
         bounds={mapBounds}
         opacity={0.8}
-        // @ts-ignore
         crossOrigin="anonymous"
         zIndex={10}
       />

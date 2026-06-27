@@ -1,4 +1,6 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 
 import React, { useEffect, useRef } from 'react';
 import { MapContainer, useMap } from 'react-leaflet';
@@ -311,7 +313,7 @@ function createSideBySide() {
   });
 
   return (leftLayers: any, rightLayers: any, options?: any) => {
-    // @ts-ignore
+    // @ts-expect-error Leaflet SideBySide extends L.Control
     return new SideBySide(leftLayers, rightLayers, options);
   };
 }
@@ -336,7 +338,7 @@ function SideBySideControl({ leftUrl, rightUrl, bounds }: { leftUrl: string, rig
       document.head.appendChild(styleTag);
     }
 
-    // @ts-ignore
+    // @ts-expect-error Leaflet types are notoriously picky about bounds arrays
     map.fitBounds(L.latLngBounds(bounds));
 
     const leftLayer = L.imageOverlay(leftUrl, bounds, { opacity: 1, crossOrigin: "anonymous" }).addTo(map);

@@ -3,9 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { InterpolationJobState } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { useVisualization } from '@/features/visualization/hooks/use-visualization';
 import { SatelliteViewer } from '@/features/visualization/components/satellite-viewer';
-import { Loader2 } from 'lucide-react';
 import { formatDate } from '@/features/metadata/utils/formatters';
 
 interface InterpolationResultPreviewProps {
@@ -81,7 +79,7 @@ function PreviewWrapper({ fileId, variable }: { fileId: string, variable?: strin
     }).catch(console.error);
   }, [fileId, varName]);
 
-  const generatedLayerUrl = visualizationClient.getLayerUrl(fileId, varName, 0);
+  const generatedLayerUrl = visualizationClient.getLayerUrl(fileId, varName);
 
   return (
     <div className="w-full h-full min-h-[400px] relative">

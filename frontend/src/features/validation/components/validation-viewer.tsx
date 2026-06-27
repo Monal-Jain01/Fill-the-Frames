@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import dynamic from 'next/dynamic';
 import { useValidationStore } from '@/store/validation-store';
 import { visualizationClient } from '@/lib/api/visualization-client';
@@ -12,17 +12,14 @@ const LeafletCompareMap = dynamic(
 
 export function ValidationViewer() {
   const { artifactId, groundTruthFileId, selectedVariable, bounds: storeBounds } = useValidationStore();
-  const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
-
   const varName = selectedVariable || "C13";
 
-  // Read authoritative bounds directly from the Orchestration metadata.
-  useEffect(() => {
+  const bounds: [number, number, number, number] | undefined = React.useMemo(() => {
     if (storeBounds && storeBounds.bounds) {
       const b = storeBounds.bounds as [[number, number], [number, number]];
-      // Extract from [[south, west], [north, east]]
-      setBounds([b[0][0], b[0][1], b[1][0], b[1][1]]);
+      return [b[0][0], b[0][1], b[1][0], b[1][1]];
     }
+    return undefined;
   }, [storeBounds]);
 
   if (!artifactId || !groundTruthFileId) {
@@ -33,8 +30,8 @@ export function ValidationViewer() {
     );
   }
 
-  const generatedUrl = visualizationClient.getLayerUrl(artifactId, varName, 0);
-  const truthUrl = visualizationClient.getLayerUrl(groundTruthFileId, varName, 0);
+  const generatedUrl = visualizationClient.getLayerUrl(artifactId, varName);
+  const truthUrl = visualizationClient.getLayerUrl(groundTruthFileId, varName);
 
   return (
     <div className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden border border-border shadow-md">

@@ -5,7 +5,6 @@ export function useAnimation() {
   const { 
     frames, 
     selectedVariable,
-    currentFrameIndex, 
     playing, 
     playbackSpeed, 
     nextFrame 
