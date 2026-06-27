@@ -55,23 +55,30 @@ export function InterpolationResultPreview({ jobState }: InterpolationResultPrev
 }
 
 import { visualizationClient } from '@/lib/api/visualization-client';
+import { useInterpolationStore } from '@/store/interpolation-store';
 
 // Separate wrapper component to bypass complex visualization hooks
 function PreviewWrapper({ fileId, variable }: { fileId: string, variable?: string }) {
   const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const varName = variable || "C13";
+  const t0FileId = useInterpolationStore(state => state.t0FileId);
+
+  // Always prefer to get bounds from the raw unmodified T0 file if available
+  const boundsTargetId = t0FileId || fileId;
 
   useEffect(() => {
-    setIsLoading(true);
-    visualizationClient.getBounds(fileId, varName).then(res => {
-      if (res.success && res.data && res.data.bounds) {
-        const [[south, west], [north, east]] = res.data.bounds;
-        setBounds([south, west, north, east]);
-      }
-    }).catch(console.error)
-    .finally(() => setIsLoading(false));
-  }, [fileId, varName]);
+    if (boundsTargetId) {
+      setIsLoading(true);
+      visualizationClient.getBounds(boundsTargetId, varName).then(res => {
+        if (res.success && res.data && res.data.bounds) {
+          const [[south, west], [north, east]] = res.data.bounds;
+          setBounds([south, west, north, east]);
+        }
+      }).catch(console.error)
+      .finally(() => setIsLoading(false));
+    }
+  }, [boundsTargetId, varName]);
 
   const generatedLayerUrl = visualizationClient.getLayerUrl(fileId, varName, 0);
 

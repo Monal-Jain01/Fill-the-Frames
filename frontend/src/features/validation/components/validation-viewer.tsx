@@ -18,9 +18,9 @@ export function ValidationViewer() {
   const varName = selectedVariable || "C13";
 
   useEffect(() => {
-    if (artifactId) {
+    if (groundTruthFileId) {
       setIsBoundsLoading(true);
-      visualizationClient.getBounds(artifactId, varName).then(res => {
+      visualizationClient.getBounds(groundTruthFileId, varName).then(res => {
         if (res.success && res.data && res.data.bounds) {
           const [[south, west], [north, east]] = res.data.bounds;
           setBounds([south, west, north, east]);
@@ -28,7 +28,7 @@ export function ValidationViewer() {
       }).catch(console.error)
       .finally(() => setIsBoundsLoading(false));
     }
-  }, [artifactId, varName]);
+  }, [groundTruthFileId, varName]);
 
   if (!artifactId || !groundTruthFileId) {
     return (
