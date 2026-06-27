@@ -150,9 +150,30 @@ class SatelliteInterpolationModel:
         # Update descriptions
         original_scene.attrs["description"] = "AI Interpolated Frame (RIFE Engine)"
         if channel in original_scene:
-            original_scene[channel].attrs[
-                "description"
-            ] = "AI Interpolated Satellite Frame"
+            original_scene[channel].attrs["description"] = (
+                "AI Interpolated Satellite Frame"
+            )
+
+        # 1.5 Extract Geographic Bounding Box and inject into Global Attributes
+        # This breaks the hard-lock to India by saving the real coordinates directly into the AI file!
+        try:
+            area = original_scene[channel].attrs.get("area")
+            if area:
+                lons, lats = area.get_lonlats()
+                valid_mask = (
+                    ~np.isnan(lats)
+                    & ~np.isnan(lons)
+                    & ~np.isinf(lats)
+                    & ~np.isinf(lons)
+                )
+                original_scene.attrs["ai_min_lat"] = float(np.min(lats[valid_mask]))
+                original_scene.attrs["ai_max_lat"] = float(np.max(lats[valid_mask]))
+                original_scene.attrs["ai_min_lon"] = float(np.min(lons[valid_mask]))
+                original_scene.attrs["ai_max_lon"] = float(np.max(lons[valid_mask]))
+        except Exception as e:
+            logger.warning(
+                f"Could not extract dynamic geographic bounds for AI file: {e}"
+            )
 
         # 2. Clean Attributes (To avoid NetCDF serialization crash with numpy datatypes)
         def clean_attrs(attrs_dict):

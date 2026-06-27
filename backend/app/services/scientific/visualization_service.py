@@ -148,6 +148,26 @@ class VisualizationService:
                 getattr(parser, "is_ai_file", False)
                 or getattr(parser, "scene", None) is None
             ):
+                # Try to read dynamic bounds injected by RIFE Engine
+                try:
+                    metadata = parser.extract_metadata()
+                    attrs = metadata.get("global_attributes", {})
+                    if "ai_min_lat" in attrs:
+                        return {
+                            "bounds": [
+                                [
+                                    float(attrs["ai_min_lat"]),
+                                    float(attrs["ai_min_lon"]),
+                                ],
+                                [
+                                    float(attrs["ai_max_lat"]),
+                                    float(attrs["ai_max_lon"]),
+                                ],
+                            ]
+                        }
+                except Exception as ex:
+                    logger.warning(f"Could not extract dynamic AI bounds: {ex}")
+
                 return {"bounds": [[8.0, 68.0], [37.0, 97.0]]}
 
             # SatPy scene area se bounds nikalna
