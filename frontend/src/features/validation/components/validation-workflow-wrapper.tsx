@@ -219,9 +219,12 @@ export function ValidationWorkflowWrapper() {
       component: (
         <div className="space-y-6">
            <MetricsDashboard />
-           <div className="flex justify-center pt-4">
-            <Button variant="outline" onClick={() => console.log('Validation complete')}>
-              Complete Validation
+           <div className="flex justify-center gap-4 pt-4">
+            <Button variant="outline" onClick={() => {
+                store.reset();
+                window.location.reload();
+            }}>
+              Start New Validation
             </Button>
           </div>
         </div>

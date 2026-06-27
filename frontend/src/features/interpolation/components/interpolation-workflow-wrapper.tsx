@@ -180,8 +180,14 @@ export function InterpolationWorkflowWrapper() {
       component: (
         <div className="space-y-6 flex flex-col items-center justify-center min-h-[300px]">
            <h2 className="text-2xl font-bold text-primary">Export Options</h2>
-           <p className="text-muted-foreground">Download the generated T0.5 frame.</p>
-           <Button size="lg" className="mt-4">Download .nc File</Button>
+           <p className="text-muted-foreground">Download the generated T0.5 frame or start over.</p>
+           <div className="flex gap-4 mt-4">
+             <Button size="lg" onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'https://sid385-fill-the-frames.hf.space/api/v1'}/export/download/${store.outputFileId}`)}>Download .nc File</Button>
+             <Button size="lg" variant="outline" onClick={() => {
+                store.reset();
+                window.location.reload();
+             }}>Start New Interpolation</Button>
+           </div>
         </div>
       ),
     },

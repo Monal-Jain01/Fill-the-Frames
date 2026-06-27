@@ -334,22 +334,26 @@ class VisualizationService:
             )
 
             if is_thermal:
-                # Color mapping: Hot temperatures -> Yellow, Cold -> White
-                # In Kelvin: ~300K is Hot (surface), ~200K is Cold (cloud tops)
-                # We blend Blue channel from 0 (Yellow) to 255 (White)
+                # Standard Meteorological Cloud Mapping:
+                # Cold clouds are opaque white. Warm land/water is fully transparent.
+                # This allows the rich Green/Blue base maps to show through!
 
-                blue_channel = np.clip(
-                    (300.0 - frame_clean) / (300.0 - 200.0) * 255, 0, 255
+                # Cloud Top Temp range: 190K (Cold/High) to 290K (Warm/Surface)
+                CLOUD_MIN = 190.0
+                CLOUD_MAX = 290.0
+
+                # Normalize: 190K -> 0, 290K -> 255
+                temp_norm = np.clip(
+                    (frame_clean - CLOUD_MIN) / (CLOUD_MAX - CLOUD_MIN) * 255, 0, 255
                 ).astype(np.uint8)
 
+                # Set RGB to pure white for clouds
                 rgba_img[..., 0] = 255  # Red
                 rgba_img[..., 1] = 255  # Green
-                rgba_img[..., 2] = blue_channel  # Blue
+                rgba_img[..., 2] = 255  # Blue
 
-                # Alpha: Hot areas are semi-transparent (so map is visible), cold clouds are opaque
-                alpha_channel = np.clip(
-                    (MAX_VAL - frame_clean) / (MAX_VAL - MIN_VAL) * 200 + 55, 0, 255
-                ).astype(np.uint8)
+                # Alpha: Invert so 190K (Cold) is Opaque (255) and 290K (Warm) is Transparent (0)
+                alpha_channel = 255 - temp_norm
 
                 rgba_img[..., 3] = np.where(valid_mask, alpha_channel, 0)
             else:
