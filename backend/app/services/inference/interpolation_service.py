@@ -16,8 +16,8 @@ from app.services.scientific.visualization_service import VisualizationService
 # Initialize Hugging Face File System
 fs = HfFileSystem(token=HF_TOKEN)
 
-class InterpolationService:
 
+class InterpolationService:
     @staticmethod
     def run_job(
         job_id: str, req: InterpolationRequest, job_store: Dict[str, Dict[str, Any]]
@@ -39,12 +39,12 @@ class InterpolationService:
             parser1 = MetadataService.get_parser(path_1)
             parser1.load_dataset(path_1)
             img1 = parser1.extract_time_slice(channel, 0)
-            time1 = parser1.scene.start_time  
+            time1 = parser1.scene.start_time
 
             parser2 = MetadataService.get_parser(path_2)
             parser2.load_dataset(path_2)
             img2 = parser2.extract_time_slice(channel, 0)
-            time2 = parser2.scene.start_time 
+            time2 = parser2.scene.start_time
 
             # Timestamp Midpoint Calculation
             interpolated_time = time1 + (time2 - time1) / 2
@@ -62,9 +62,11 @@ class InterpolationService:
             job_store[job_id]["progress"] = 80.0
 
             # 4. Result ko serverless cache me save karna
-            logger.info(f"[Job {job_id}] AI finished. Saving interpolated image to cache...")
+            logger.info(
+                f"[Job {job_id}] AI finished. Saving interpolated image to cache..."
+            )
             result_file_id = str(uuid.uuid4())
-            
+
             # 🚨 TEMP_STORAGE_DIR use kiya hai serverless ke liye
             local_result_dir = Path(TEMP_STORAGE_DIR) / result_file_id
             local_result_dir.mkdir(parents=True, exist_ok=True)
@@ -74,17 +76,19 @@ class InterpolationService:
 
             # Save locally to /tmp first
             ai_model.save_to_nc(
-                interpolated_img, 
-                parser1.scene, 
-                str(local_output_path), 
-                channel, 
-                interpolated_time=interpolated_time
+                interpolated_img,
+                parser1.scene,
+                str(local_output_path),
+                channel,
+                interpolated_time=interpolated_time,
             )
 
             # 🚨 4.5 NEW: Upload the generated file to Hugging Face Buckets!
-            logger.info(f"[Job {job_id}] Pushing generated NetCDF to Hugging Face Cloud...")
-            remote_path = f"hf://buckets/{HF_BUCKET_ID}/{result_file_id}/{output_name}"
-            
+            logger.info(
+                f"[Job {job_id}] Pushing generated NetCDF to Hugging Face Cloud..."
+            )
+            remote_path = f"hf://buckets/{HF_BUCKET_ID}/interpolations/{result_file_id}/{output_name}"
+
             # Transfer the file
             fs.put(str(local_output_path), remote_path)
 
@@ -93,7 +97,9 @@ class InterpolationService:
             job_store[job_id]["progress"] = 100.0
             job_store[job_id]["result_file_id"] = result_file_id
 
-            logger.success(f"[Job {job_id}] Interpolation successfully completed and uploaded to cloud!")
+            logger.success(
+                f"[Job {job_id}] Interpolation successfully completed and uploaded to cloud!"
+            )
 
             # Memory clean
             parser1.close()

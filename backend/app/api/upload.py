@@ -14,6 +14,7 @@ router = APIRouter()
 # Initialize Hugging Face File System
 fs = HfFileSystem(token=HF_TOKEN)
 
+
 # 🚨 FIX: Do add ki gayi hai trailing slash error se bachne ke liye
 @router.post("/", response_model=ApiResponse)
 async def upload_file(file: UploadFile = File(...)):
@@ -63,7 +64,10 @@ async def list_uploaded_files():
     Get a list of all uploaded dataset folders and their sizes directly from Hugging Face.
     """
     try:
-        bucket_path = f"hf://buckets/{HF_BUCKET_ID}/"
+        bucket_path = f"hf://buckets/{HF_BUCKET_ID}/uploads/"
+        if not fs.exists(bucket_path):
+            return ApiResponse(success=True, message="No files uploaded yet", data=[])
+
         folders = fs.ls(bucket_path, detail=False)
 
         files_info = []
@@ -100,7 +104,11 @@ async def delete_file(file_id: str):
     """
     Delete an uploaded dataset from Hugging Face Bucket to clear space.
     """
-    remote_dir = f"hf://buckets/{HF_BUCKET_ID}/{file_id}"
+    remote_dir = f"hf://buckets/{HF_BUCKET_ID}/uploads/{file_id}"
+
+    # Fallback to legacy root check
+    if not fs.exists(remote_dir):
+        remote_dir = f"hf://buckets/{HF_BUCKET_ID}/{file_id}"
 
     if not fs.exists(remote_dir):
         raise HTTPException(status_code=404, detail="File directory not found in cloud")

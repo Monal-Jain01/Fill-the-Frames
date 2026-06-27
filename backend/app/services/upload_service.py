@@ -69,8 +69,10 @@ class UploadService:
         with open(local_file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # 2. Hugging Face Bucket me Cloud Upload karo
-        remote_path = f"hf://buckets/{HF_BUCKET_ID}/{file_id}/{clean_original_name}"
+        # 2. Hugging Face Bucket me Cloud Upload karo (Organized into /uploads folder)
+        remote_path = (
+            f"hf://buckets/{HF_BUCKET_ID}/uploads/{file_id}/{clean_original_name}"
+        )
 
         try:
             # fs.put automatically handles transferring the local file to the remote bucket

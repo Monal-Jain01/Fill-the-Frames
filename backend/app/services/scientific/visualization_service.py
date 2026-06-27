@@ -29,28 +29,40 @@ class VisualizationService:
         local_cache_dir = Path(TEMP_STORAGE_DIR) / file_id
         local_cache_dir.mkdir(parents=True, exist_ok=True)
 
-        remote_target = f"hf://buckets/{HF_BUCKET_ID}/{file_id}"
+        # Check organized paths first, then fallback to legacy root paths
+        potential_remote_dirs = [
+            f"hf://buckets/{HF_BUCKET_ID}/uploads/{file_id}",
+            f"hf://buckets/{HF_BUCKET_ID}/interpolations/{file_id}",
+            f"hf://buckets/{HF_BUCKET_ID}/{file_id}",
+        ]
+
         remote_file_path = None
 
         try:
-            # Case 1: Check if it's a directory (AI generated file style)
-            remote_files = fs.glob(f"{remote_target}/*")
+            for remote_target in potential_remote_dirs:
+                # Case 1: Check if it's a directory (AI generated file style or new upload style)
+                remote_files = fs.glob(f"{remote_target}/*")
 
-            if remote_files:
-                # Get the first file inside the folder
-                remote_file_path = remote_files[0]
+                if remote_files:
+                    # Get the first file inside the folder
+                    remote_file_path = remote_files[0]
+                    break
 
-            # Case 2: Check if it's a direct file (User uploaded style)
-            elif fs.exists(remote_target):
-                remote_file_path = remote_target
+                # Case 2: Check if it's a direct file (legacy user uploaded style)
+                elif fs.exists(remote_target):
+                    remote_file_path = remote_target
+                    break
 
-            # Case 3: Check if the user forgot to add the extension in the API request
-            elif fs.exists(f"{remote_target}.nc"):
-                remote_file_path = f"{remote_target}.nc"
-            elif fs.exists(f"{remote_target}.h5"):
-                remote_file_path = f"{remote_target}.h5"
-            elif fs.exists(f"{remote_target}.hdf5"):
-                remote_file_path = f"{remote_target}.hdf5"
+                # Case 3: Check if the user forgot to add the extension in the API request
+                elif fs.exists(f"{remote_target}.nc"):
+                    remote_file_path = f"{remote_target}.nc"
+                    break
+                elif fs.exists(f"{remote_target}.h5"):
+                    remote_file_path = f"{remote_target}.h5"
+                    break
+                elif fs.exists(f"{remote_target}.hdf5"):
+                    remote_file_path = f"{remote_target}.hdf5"
+                    break
 
             if not remote_file_path:
                 raise HTTPException(
@@ -183,8 +195,62 @@ class VisualizationService:
             parser.load_dataset(file_path)
             VisualizationService.validate_variable(parser, variable)
 
-            # Extract 2D array matrix (Time index 0)
-            frame = parser.extract_time_slice(variable, 0)
+            # ROUTE 1: Geostationary to Geographic Reprojection for accurate Leaflet overlay
+            if (
+                getattr(parser, "is_ai_file", False) is False
+                and getattr(parser, "scene", None) is not None
+            ):
+                try:
+                    area = parser.scene[variable].attrs.get("area")
+                    if area:
+                        lons, lats = area.get_lonlats()
+                        valid_mask = (
+                            ~np.isnan(lats)
+                            & ~np.isnan(lons)
+                            & ~np.isinf(lats)
+                            & ~np.isinf(lons)
+                        )
+                        south, north = (
+                            float(np.min(lats[valid_mask])),
+                            float(np.max(lats[valid_mask])),
+                        )
+                        west, east = (
+                            float(np.min(lons[valid_mask])),
+                            float(np.max(lons[valid_mask])),
+                        )
+
+                        from pyresample.geometry import create_area_def
+
+                        # Define a 1000x1000 geographic grid covering the exact bounding box
+                        area_extent = (west, south, east, north)
+                        target_area = create_area_def(
+                            "leaflet_grid",
+                            "EPSG:4326",
+                            "leaflet_grid",
+                            "leaflet_grid",
+                            "WGS84",
+                            1000,
+                            1000,
+                            area_extent,
+                        )
+
+                        logger.info(
+                            "Reprojecting Geostationary data to Equirectangular EPSG:4326 for Leaflet map..."
+                        )
+                        resampled_scene = parser.scene.resample(
+                            target_area, resampler="nearest"
+                        )
+                        frame = resampled_scene[variable].values.astype(np.float32)
+                    else:
+                        frame = parser.extract_time_slice(variable, 0)
+                except Exception as e:
+                    logger.warning(
+                        f"Reprojection failed, falling back to raw array: {str(e)}"
+                    )
+                    frame = parser.extract_time_slice(variable, 0)
+            else:
+                # Extract 2D array matrix directly for AI files or if scene doesn't exist
+                frame = parser.extract_time_slice(variable, 0)
 
             # Downsample optimization for extremely fast web renders
             frame = frame[::2, ::2]
@@ -244,18 +310,67 @@ class VisualizationService:
         actual_path = VisualizationService._get_file_path(actual_file_id)
         ai_path = VisualizationService._get_file_path(ai_file_id)
 
+        def get_frame_matrix(parser, is_actual: bool):
+            if (
+                getattr(parser, "is_ai_file", False) is False
+                and getattr(parser, "scene", None) is not None
+            ):
+                try:
+                    area = parser.scene[variable].attrs.get("area")
+                    if area:
+                        lons, lats = area.get_lonlats()
+                        valid_mask = (
+                            ~np.isnan(lats)
+                            & ~np.isnan(lons)
+                            & ~np.isinf(lats)
+                            & ~np.isinf(lons)
+                        )
+                        south, north = (
+                            float(np.min(lats[valid_mask])),
+                            float(np.max(lats[valid_mask])),
+                        )
+                        west, east = (
+                            float(np.min(lons[valid_mask])),
+                            float(np.max(lons[valid_mask])),
+                        )
+
+                        from pyresample.geometry import create_area_def
+
+                        area_extent = (west, south, east, north)
+                        target_area = create_area_def(
+                            "leaflet_grid",
+                            "EPSG:4326",
+                            "leaflet_grid",
+                            "leaflet_grid",
+                            "WGS84",
+                            1000,
+                            1000,
+                            area_extent,
+                        )
+
+                        logger.info(
+                            "Reprojecting Geostationary data for Error Map overlay..."
+                        )
+                        resampled_scene = parser.scene.resample(
+                            target_area, resampler="nearest"
+                        )
+                        return resampled_scene[variable].values.astype(np.float32)
+                except Exception as e:
+                    logger.warning(f"Error map reprojection failed: {str(e)}")
+            return parser.extract_time_slice(variable, 0)
+
         parser_actual = None
         parser_ai = None
         try:
             parser_actual = MetadataService.get_parser(actual_path)
             parser_actual.load_dataset(actual_path)
             VisualizationService.validate_variable(parser_actual, variable)
-            frame_actual = parser_actual.extract_time_slice(variable, 0)[::2, ::2]
+            frame_actual = get_frame_matrix(parser_actual, True)[::2, ::2]
 
             parser_ai = MetadataService.get_parser(ai_path)
             parser_ai.load_dataset(ai_path)
             VisualizationService.validate_variable(parser_ai, variable)
-            frame_ai = parser_ai.extract_time_slice(variable, 0)[::2, ::2]
+            frame_ai = get_frame_matrix(parser_ai, False)[::2, ::2]
 
             # 1. Validation masks
             valid_mask_actual = (
