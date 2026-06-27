@@ -70,13 +70,9 @@ export function useVisualization(fileId?: string | null) {
         // Fetch bounds
         try {
           const boundsRes = await visualizationClient.getBounds(fileId, selectedVariable);
-          if (boundsRes.success && boundsRes.data) {
-             setBounds([
-               boundsRes.data.min_lat,
-               boundsRes.data.min_lon,
-               boundsRes.data.max_lat,
-               boundsRes.data.max_lon
-             ]);
+          if (boundsRes.success && boundsRes.data && boundsRes.data.bounds) {
+             const [[south, west], [north, east]] = boundsRes.data.bounds;
+             setBounds([south, west, north, east]);
           }
         } catch(e) {
           console.warn("Could not load dynamic bounds", e);

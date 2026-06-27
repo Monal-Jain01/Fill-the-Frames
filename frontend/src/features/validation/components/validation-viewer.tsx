@@ -19,8 +19,9 @@ export function ValidationViewer() {
   useEffect(() => {
     if (artifactId) {
       visualizationClient.getBounds(artifactId, varName).then(res => {
-        if (res.success && res.data && typeof res.data.min_lat === 'number') {
-          setBounds([res.data.min_lat, res.data.min_lon, res.data.max_lat, res.data.max_lon]);
+        if (res.success && res.data && res.data.bounds) {
+          const [[south, west], [north, east]] = res.data.bounds;
+          setBounds([south, west, north, east]);
         }
       }).catch(console.error);
     }
