@@ -1,7 +1,6 @@
 import { ApiResponse } from "@/types/api";
 import { FrameDataResponse, MapBoundsResponse } from "@/features/visualization/types";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://sid385-fill-the-frames.hf.space/api/v1";
+import { BASE_URL } from "./base-client";
 
 export const visualizationClient = {
   getAvailableVariables: async (fileId: string): Promise<ApiResponse<string[]>> => {
@@ -34,8 +33,8 @@ export const visualizationClient = {
     return response.json();
   },
 
-  getLayerUrl: (fileId: string, variable: string, timestamp: number = 0): string => {
-    return `${BASE_URL}/visualization/${fileId}/layer?variable=${encodeURIComponent(variable)}&timestamp=${timestamp}`;
+  getLayerUrl: (fileId: string, variable: string, _timeIndex: number = 0): string => {
+    return `${BASE_URL}/visualization/${fileId}/layer?variable=${encodeURIComponent(variable)}`;
   },
 
   getErrorMapLayerUrl: (fileId1: string, fileId2: string, variable: string, timestamp: number = 0): string => {

@@ -1,6 +1,5 @@
 import { ApiResponse } from "@/types/api";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://sid385-fill-the-frames.hf.space/api/v1";
+import { BASE_URL } from "./base-client";
 
 export interface MetricsCompareRequest {
   generated_file_id: string;

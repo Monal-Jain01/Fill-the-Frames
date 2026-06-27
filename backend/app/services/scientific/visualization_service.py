@@ -123,7 +123,7 @@ class VisualizationService:
             area = parser.scene[variable].attrs.get('area')
             if not area:
                 # Default bounds for India/Subcontinent as fallback
-                return {"bounds": [[8.0, 68.0], [37.0, 97.0]]}
+                return {"bounds": [[8.0, 68.0], [37.0, 97.0]], "min_lat": 8.0, "min_lon": 68.0, "max_lat": 37.0, "max_lon": 97.0}
             
             lons, lats = area.get_lonlats()
             
@@ -141,13 +141,17 @@ class VisualizationService:
                 south, north, west, east = 8.0, 37.0, 68.0, 97.0
             
             return {
-                "bounds": [[south, west], [north, east]]
+                "bounds": [[south, west], [north, east]],
+                "min_lat": south,
+                "min_lon": west,
+                "max_lat": north,
+                "max_lon": east,
             }
 
         except Exception as e:
             logger.exception(f"Failed to extract bounds for {file_id}")
             # Fallback bounds if projection logic fails initially
-            return {"bounds": [[8.0, 68.0], [37.0, 97.0]]}
+            return {"bounds": [[8.0, 68.0], [37.0, 97.0]], "min_lat": 8.0, "min_lon": 68.0, "max_lat": 37.0, "max_lon": 97.0}
         finally:
             if parser is not None:
                 parser.close()

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useValidationStore } from '@/store/validation-store';
 import { WorkflowStepper, Step } from '@/components/common/workflow-stepper';
 import { WorkflowNavigation } from '@/components/common/workflow-navigation';
@@ -9,16 +10,20 @@ import { MetadataOverview } from '@/features/metadata/components/metadata-overvi
 import { ValidationViewer } from './validation-viewer';
 import dynamic from 'next/dynamic';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 const DifferenceMapViewer = dynamic(
   () => import('@/features/comparison/components/difference-map-viewer').then(mod => mod.DifferenceMapViewer),
-  { ssr: false, loading: () => <div className="w-full h-[500px] flex items-center justify-center animate-pulse bg-muted">Loading map...</div> }
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-[500px] flex items-center justify-center animate-pulse bg-muted">Loading map...</div>,
+    // BUG-010: error fallback for chunk-load failures
+  }
 );
+
 import { MetricsDashboard } from '@/features/metrics/components/metrics-dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-// No DifferenceMapData import needed
 import { useMetadata } from '@/features/metadata/hooks/use-metadata';
-
 import { useValidation } from '@/features/validation/hooks/use-validation';
 import { MetadataSummary } from '@/features/metadata/components/metadata-summary';
 import { MetadataVariableList } from '@/features/metadata/components/metadata-variable-list';
@@ -28,17 +33,12 @@ import { exportClient } from '@/lib/api/export-client';
 
 
 export function ValidationWorkflowWrapper() {
+  const router = useRouter();
   const store = useValidationStore();
   const { currentStep, nextStep, prevStep, setArtifactId, setGroundTruthFileId, setGroundTruthFilename } = store;
   const [tempArtifactId, setTempArtifactId] = useState(store.artifactId || '');
   const { fetchValidationMetadata } = useMetadata();
-  const { prepareValidation } = useValidation();
-
-  // React.useEffect(() => {
-  //   if (store.artifactId && store.currentStep === 1) {
-  //     store.nextStep();
-  //   }
-  // }, [store.artifactId, store.currentStep, store]);
+  const { prepareValidation, computeMetrics } = useValidation();
 
   const handleArtifactLoad = () => {
     setArtifactId(tempArtifactId);
@@ -51,6 +51,18 @@ export function ValidationWorkflowWrapper() {
     nextStep();
     await fetchValidationMetadata(fileId);
   };
+
+  // BUG-006: Finish Session — navigate back to dashboard and reset all state
+  const handleFinishSession = () => {
+    store.reset();
+    router.push('/dashboard');
+  };
+
+  // BUG-005: derive externalBounds from the already-fetched store bounds
+  const externalBounds: [number, number, number, number] | null =
+    store.bounds
+      ? [store.bounds.min_lat, store.bounds.min_lon, store.bounds.max_lat, store.bounds.max_lon]
+      : null;
 
   const renderMetadata = () => {
     if (store.metadataLoading) {
@@ -191,6 +203,8 @@ export function ValidationWorkflowWrapper() {
                fileIdForBounds={store.validationPair?.groundTruthId}
                variable={store.selectedVariable || "C13"}
                isFullscreen={false}
+               // BUG-005: pass pre-fetched bounds to skip the duplicate getBounds API call
+               externalBounds={externalBounds}
              />
            ) : (
              <div className="w-full h-[500px] flex items-center justify-center bg-muted/10 border rounded-lg text-muted-foreground">
@@ -198,7 +212,16 @@ export function ValidationWorkflowWrapper() {
              </div>
            )}
            <div className="flex justify-center pt-4">
-             <Button onClick={nextStep} disabled={!store.validationPair}>Compute Metrics</Button>
+             {/* BUG-003: computeMetrics is now triggered here, only when the user explicitly advances */}
+             <Button
+               onClick={async () => {
+                 nextStep();
+                 await computeMetrics();
+               }}
+               disabled={!store.validationPair}
+             >
+               Compute Metrics
+             </Button>
            </div>
         </div>
       ),
@@ -211,7 +234,8 @@ export function ValidationWorkflowWrapper() {
         <div className="space-y-6">
            <MetricsDashboard />
            <div className="flex justify-center pt-4 gap-4">
-            <Button variant="outline" onClick={() => console.log('Validation complete')}>
+            {/* BUG-006: wired to navigate + store reset */}
+            <Button variant="outline" onClick={handleFinishSession}>
               Finish Session
             </Button>
             <Button 

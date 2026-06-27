@@ -127,6 +127,7 @@ export const useValidationStore = create<ValidationState>()(
         metricsComputed: state.metricsComputed,
         groundTruthMetadata: state.groundTruthMetadata,
         validationPair: state.validationPair,
+        bounds: state.bounds,
         metrics: state.metrics,
       })
     }

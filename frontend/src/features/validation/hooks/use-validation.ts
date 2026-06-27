@@ -30,8 +30,8 @@ export function useValidation() {
         bounds: boundsResponse.data,
       });
 
-      // Trigger metrics computation immediately after setting up bounds
-      computeMetrics();
+      // NOTE: computeMetrics() is intentionally NOT called here.
+      // It is triggered explicitly by the user advancing from Step 5 → 6.
       
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : 'An error occurred during preparation';
@@ -70,5 +70,6 @@ export function useValidation() {
 
   return {
     prepareValidation: fetchBoundsAndPrepare,
+    computeMetrics,
   };
 }

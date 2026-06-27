@@ -17,6 +17,8 @@ interface DifferenceMapViewerProps {
   isFullscreen: boolean;
   fileIdForBounds?: string | null;
   variable?: string;
+  /** Pre-fetched bounds [min_lat, min_lon, max_lat, max_lon] — skips internal getBounds call when provided */
+  externalBounds?: [number, number, number, number] | null;
 }
 
 /** Auto-fit the map to the image bounds whenever the URL changes */
@@ -39,19 +41,25 @@ export function DifferenceMapViewer({
   isFullscreen,
   fileIdForBounds,
   variable,
+  externalBounds,
 }: DifferenceMapViewerProps) {
   const heightClass = isFullscreen ? 'h-[80vh]' : 'h-[60vh] min-h-[500px]';
-  const [boundsData, setBoundsData] = useState<[number, number, number, number] | undefined>(undefined);
+  const [fetchedBounds, setFetchedBounds] = useState<[number, number, number, number] | undefined>(undefined);
 
+  // Only fetch bounds from API when no pre-fetched bounds are passed in
   useEffect(() => {
+    if (externalBounds) return; // Already have bounds — skip the duplicate call
     if (fileIdForBounds) {
       visualizationClient.getBounds(fileIdForBounds, variable || "C13").then(res => {
         if (res.success && res.data && typeof res.data.min_lat === 'number') {
-          setBoundsData([res.data.min_lat, res.data.min_lon, res.data.max_lat, res.data.max_lon]);
+          setFetchedBounds([res.data.min_lat, res.data.min_lon, res.data.max_lat, res.data.max_lon]);
         }
       }).catch(console.error);
     }
-  }, [fileIdForBounds, variable]);
+  }, [fileIdForBounds, variable, externalBounds]);
+
+  // Prefer externalBounds (from store), fall back to self-fetched, then to hardcoded India bbox
+  const boundsData = externalBounds ?? fetchedBounds;
 
   const fullUrl = errorMapUrl
     ? (errorMapUrl.startsWith('http') ? errorMapUrl : `${BASE_URL}${errorMapUrl}`)

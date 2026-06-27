@@ -30,9 +30,7 @@ export function useVisualization(fileId?: string | null) {
   const state = visLoading ? 'loading' : error ? 'error' : 'ready';
 
   useEffect(() => {
-    if (store.status === 'completed') {
-      console.log('Interpolation completed successfully');
-    }
+    // Trigger any completion-dependent effects when interpolation finishes
   }, [store.status]);
 
   useEffect(() => {

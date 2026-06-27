@@ -1,7 +1,6 @@
 import { ApiResponse } from "@/types/api";
 import { MetadataResponse } from "@/features/metadata/types";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://sid385-fill-the-frames.hf.space/api/v1";
+import { BASE_URL } from "./base-client";
 
 export const metadataClient = {
   getMetadata: async (fileId: string): Promise<ApiResponse<MetadataResponse>> => {
