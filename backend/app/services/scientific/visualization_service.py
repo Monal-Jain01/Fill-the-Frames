@@ -284,22 +284,26 @@ class VisualizationService:
             # Normalize Brightness Temperature to 0-255 range
             MIN_BT = 90.0
             MAX_BT = 313.0
-            frame_norm = np.clip(
+
+            # Invert: Cold temperatures (clouds) become 255, Warm temperatures (land/ocean) become 0
+            frame_norm = 255 - np.clip(
                 (frame_clean - MIN_BT) / (MAX_BT - MIN_BT) * 255, 0, 255
             ).astype(np.uint8)
 
-            # Create RGBA image matrix (A stands for Alpha/Transparency)
+            # Create RGBA image matrix
             rgba_img = np.zeros(
                 (frame_norm.shape[0], frame_norm.shape[1], 4), dtype=np.uint8
             )
 
-            # Grayscale mapping
-            rgba_img[..., 0] = frame_norm  # Red
-            rgba_img[..., 1] = frame_norm  # Green
-            rgba_img[..., 2] = frame_norm  # Blue
+            # Set RGB to pure white for clouds
+            rgba_img[..., 0] = 255  # Red
+            rgba_img[..., 1] = 255  # Green
+            rgba_img[..., 2] = 255  # Blue
 
-            # Make NaNs and empty space completely transparent (0 opacity)
-            rgba_img[..., 3] = np.where(valid_mask, 255, 0)
+            # Set Alpha (Transparency) based on temperature
+            # Cold clouds are opaque (255), warm land is transparent (0)
+            # NaNs and empty space are also forced to transparent (0)
+            rgba_img[..., 3] = np.where(valid_mask, frame_norm, 0)
 
             # Convert array to PIL Image
             img = Image.fromarray(rgba_img, mode="RGBA")
