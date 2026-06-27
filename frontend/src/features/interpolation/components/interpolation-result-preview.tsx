@@ -79,6 +79,7 @@ function PreviewWrapper({ fileId, variable }: { fileId: string, variable?: strin
 
   useEffect(() => {
     if (boundsTargetId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(true);
       visualizationClient.getBounds(boundsTargetId, varName).then(res => {
         if (res.success && res.data && res.data.bounds) {

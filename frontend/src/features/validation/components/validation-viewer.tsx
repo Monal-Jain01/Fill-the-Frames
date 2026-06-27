@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useValidationStore } from '@/store/validation-store';
 import { visualizationClient } from '@/lib/api/visualization-client';
@@ -19,6 +19,7 @@ export function ValidationViewer() {
 
   useEffect(() => {
     if (groundTruthFileId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsBoundsLoading(true);
       visualizationClient.getBounds(groundTruthFileId, varName).then(res => {
         if (res.success && res.data && res.data.bounds) {
@@ -47,8 +48,8 @@ export function ValidationViewer() {
     );
   }
 
-  const generatedUrl = visualizationClient.getLayerUrl(artifactId, varName, 0);
-  const truthUrl = visualizationClient.getLayerUrl(groundTruthFileId, varName, 0);
+  const generatedUrl = visualizationClient.getLayerUrl(artifactId, varName);
+  const truthUrl = visualizationClient.getLayerUrl(groundTruthFileId, varName);
 
   return (
     <div className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden border border-border shadow-md">

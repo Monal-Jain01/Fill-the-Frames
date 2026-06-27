@@ -51,6 +51,7 @@ export function DifferenceMapViewer({
   useEffect(() => {
     if (externalBounds) return; // Already have bounds — skip the duplicate call
     if (fileIdForBounds) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsBoundsLoading(true);
       visualizationClient.getBounds(fileIdForBounds, variable || "C13").then(res => {
         if (res.success && res.data && res.data.bounds) {
@@ -65,8 +66,8 @@ export function DifferenceMapViewer({
   }, [fileIdForBounds, variable, externalBounds]);
 
   // Prefer externalBounds (from store), fall back to self-fetched, then to hardcoded India bbox
-  const boundsData = externalBounds ?? fetchedBounds;
-
+  const mapBoundsData = externalBounds ?? boundsData;
+  // const boundsData = externalBounds ?? fetchedBounds;
   const fullUrl = errorMapUrl
     ? (errorMapUrl.startsWith('http') ? errorMapUrl : `${BASE_URL}${errorMapUrl}`)
     : null;
@@ -79,10 +80,11 @@ export function DifferenceMapViewer({
       </div>
     );
   }
-
-  const isValidBounds = boundsData && Array.isArray(boundsData) && boundsData.length === 4 && boundsData.every(n => typeof n === 'number' && !isNaN(n));
+// const isValidBounds = boundsData && Array.isArray(boundsData) && boundsData.length === 4 && boundsData.every(n => typeof n === 'number' && !isNaN(n));
+  const isValidBounds = mapBoundsData && Array.isArray(mapBoundsData) && mapBoundsData.length === 4 && mapBoundsData.every(n => typeof n === 'number' && !isNaN(n));
   const mapBounds: L.LatLngBoundsExpression = isValidBounds 
-    ? [[boundsData[0], boundsData[1]], [boundsData[2], boundsData[3]]]
+  //? [[boundsData[0], boundsData[1]], [boundsData[2], boundsData[3]]]
+    ? [[mapBoundsData[0], mapBoundsData[1]], [mapBoundsData[2], mapBoundsData[3]]]
     : [[8.4, 68.7], [37.6, 97.25]];
 
   return (
