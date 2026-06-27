@@ -46,6 +46,25 @@ class InterpolationService:
             img2 = parser2.extract_time_slice(channel, 0)
             time2 = parser2.scene.start_time
 
+            # 2.5 Spatial Co-Registration Validation (Guardrail)
+            if img1.shape != img2.shape:
+                raise ValueError(
+                    f"Shape mismatch: {req.file_id_1} ({img1.shape}) != {req.file_id_2} ({img2.shape}). Files must be identically cropped and co-registered."
+                )
+
+            area1 = parser1.scene[channel].attrs.get("area")
+            area2 = parser2.scene[channel].attrs.get("area")
+            if (
+                area1
+                and area2
+                and hasattr(area1, "area_extent")
+                and hasattr(area2, "area_extent")
+            ):
+                if area1.area_extent != area2.area_extent:
+                    logger.warning(
+                        "Geographic bounds mismatch detected between T0 and T1! Interpolation may produce physical nonsense."
+                    )
+
             # Timestamp Midpoint Calculation
             interpolated_time = time1 + (time2 - time1) / 2
             logger.info(f"[Job {job_id}] Interpolated Time: {interpolated_time}")

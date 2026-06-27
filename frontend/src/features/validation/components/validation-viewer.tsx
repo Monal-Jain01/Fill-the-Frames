@@ -13,17 +13,20 @@ const LeafletCompareMap = dynamic(
 export function ValidationViewer() {
   const { artifactId, groundTruthFileId, selectedVariable } = useValidationStore();
   const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
+  const [isBoundsLoading, setIsBoundsLoading] = useState(true);
 
   const varName = selectedVariable || "C13";
 
   useEffect(() => {
     if (artifactId) {
+      setIsBoundsLoading(true);
       visualizationClient.getBounds(artifactId, varName).then(res => {
         if (res.success && res.data && res.data.bounds) {
           const [[south, west], [north, east]] = res.data.bounds;
           setBounds([south, west, north, east]);
         }
-      }).catch(console.error);
+      }).catch(console.error)
+      .finally(() => setIsBoundsLoading(false));
     }
   }, [artifactId, varName]);
 
@@ -31,6 +34,15 @@ export function ValidationViewer() {
     return (
       <div className="w-full h-[500px] flex items-center justify-center bg-muted/10 border rounded-lg">
         <p className="text-muted-foreground">Missing alignment data.</p>
+      </div>
+    );
+  }
+
+  if (isBoundsLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto h-[500px] flex flex-col gap-4 items-center justify-center bg-muted/10 border rounded-lg animate-pulse">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-medium">Fetching geographic coordinates...</p>
       </div>
     );
   }

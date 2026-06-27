@@ -59,18 +59,30 @@ import { visualizationClient } from '@/lib/api/visualization-client';
 // Separate wrapper component to bypass complex visualization hooks
 function PreviewWrapper({ fileId, variable }: { fileId: string, variable?: string }) {
   const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
   const varName = variable || "C13";
 
   useEffect(() => {
+    setIsLoading(true);
     visualizationClient.getBounds(fileId, varName).then(res => {
       if (res.success && res.data && res.data.bounds) {
         const [[south, west], [north, east]] = res.data.bounds;
         setBounds([south, west, north, east]);
       }
-    }).catch(console.error);
+    }).catch(console.error)
+    .finally(() => setIsLoading(false));
   }, [fileId, varName]);
 
   const generatedLayerUrl = visualizationClient.getLayerUrl(fileId, varName, 0);
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-full min-h-[400px] flex flex-col gap-4 items-center justify-center bg-muted/10 border rounded-lg animate-pulse">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-medium">Fetching geographic coordinates...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full min-h-[400px] relative">

@@ -205,19 +205,37 @@ class SatelliteInterpolationModel:
             logger.warning(
                 f"SatPy CF writer failed (Likely ISRO file format mismatch): {e}"
             )
-            logger.info("Falling back to Universal Xarray Saver...")
+            logger.info("Falling back to Universal Xarray Saver with CF Coordinates...")
+
+            coords = {
+                "time": (
+                    pd.to_datetime(interpolated_time)
+                    if interpolated_time
+                    else pd.Timestamp.now()
+                )
+            }
+
+            # Attempt to extract 1D coordinate arrays from SatPy area definition
+            try:
+                area = original_scene[channel].attrs.get("area")
+                if area:
+                    lons, lats = area.get_lonlats()
+                    # Just take the 1D vectors for x and y axes if it's a regular grid
+                    coords["latitude"] = (["y", "x"], lats)
+                    coords["longitude"] = (["y", "x"], lons)
+            except Exception as coord_err:
+                logger.warning(f"Could not extract CF coordinate meshes: {coord_err}")
 
             # Seedha numpy array aur time uthao, aur nayi fresh .nc file bana do
             ds = xr.Dataset(
                 {channel: (["y", "x"], image_array)},
-                coords={
-                    "time": (
-                        pd.to_datetime(interpolated_time)
-                        if interpolated_time
-                        else pd.Timestamp.now()
-                    )
-                },
+                coords=coords,
             )
+
+            # Inject cleaned global attributes
+            for k, v in original_scene.attrs.items():
+                ds.attrs[k] = v
+
             ds.attrs["description"] = "AI Interpolated ISRO Frame (RIFE Engine)"
 
             ds.to_netcdf(output_path)

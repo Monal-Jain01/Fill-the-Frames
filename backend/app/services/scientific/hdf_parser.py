@@ -65,11 +65,33 @@ class HDFParser(BaseDatasetParser):
         logger.info(f"Making ISRO HDF5 compatible with SatPy: {file_path}")
         make_compatible_with_satpy(file_path)
 
-        self.scene = Scene(filenames=[file_path], reader="insat3d_img_l1b_h5")
-        target_channels = ["TIR1", "TIR2"]
+        # Attempt to auto-detect reader to support multiple satellite types
         try:
-            self.scene.load(target_channels)
-            logger.success("SatPy loaded INSAT data perfectly!")
+            self.scene = Scene(filenames=[file_path])
+            logger.info("SatPy auto-detected reader successfully.")
+        except ValueError:
+            # Fallback to hardcoded INSAT reader if auto-detection fails (e.g. non-standard filenames)
+            logger.warning(
+                "SatPy auto-detection failed. Falling back to 'insat3d_img_l1b_h5' reader."
+            )
+            self.scene = Scene(filenames=[file_path], reader="insat3d_img_l1b_h5")
+
+        # Load all available channels dynamically instead of hardcoding TIR1/TIR2
+        available_channels = [ds["name"] for ds in self.scene.available_dataset_ids()]
+        target_channels = ["TIR1", "TIR2", "VIS", "SWIR", "MIR", "WV"]
+
+        # Load whatever is available from our targets, or fallback to first available
+        channels_to_load = [ch for ch in target_channels if ch in available_channels]
+        if not channels_to_load and available_channels:
+            channels_to_load = available_channels[:2]
+
+        try:
+            if channels_to_load:
+                self.scene.load(channels_to_load)
+                logger.success(f"SatPy loaded channels: {channels_to_load}")
+            else:
+                logger.warning("No standard channels found to preload.")
         except Exception as e:
             logger.error(f"Failed to load channels: {e}")
-            self.scene.load(["TIR1"])
+            if available_channels:
+                self.scene.load([available_channels[0]])

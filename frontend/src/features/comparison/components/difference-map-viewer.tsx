@@ -43,21 +43,35 @@ export function DifferenceMapViewer({
 }: DifferenceMapViewerProps) {
   const heightClass = isFullscreen ? 'h-[80vh]' : 'h-[60vh] min-h-[500px]';
   const [boundsData, setBoundsData] = useState<[number, number, number, number] | undefined>(undefined);
+  const [isBoundsLoading, setIsBoundsLoading] = useState(!!fileIdForBounds);
 
   useEffect(() => {
     if (fileIdForBounds) {
+      setIsBoundsLoading(true);
       visualizationClient.getBounds(fileIdForBounds, variable || "C13").then(res => {
         if (res.success && res.data && res.data.bounds) {
           const [[south, west], [north, east]] = res.data.bounds;
           setBoundsData([south, west, north, east]);
         }
-      }).catch(console.error);
+      }).catch(console.error)
+      .finally(() => setIsBoundsLoading(false));
+    } else {
+      setIsBoundsLoading(false);
     }
   }, [fileIdForBounds, variable]);
 
   const fullUrl = errorMapUrl
     ? (errorMapUrl.startsWith('http') ? errorMapUrl : `${BASE_URL}${errorMapUrl}`)
     : null;
+
+  if (isBoundsLoading) {
+    return (
+      <div className={`w-full ${heightClass} flex flex-col gap-4 items-center justify-center bg-muted/10 border rounded-lg animate-pulse`}>
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-medium">Fetching geographic coordinates...</p>
+      </div>
+    );
+  }
 
   const isValidBounds = boundsData && Array.isArray(boundsData) && boundsData.length === 4 && boundsData.every(n => typeof n === 'number' && !isNaN(n));
   const mapBounds: L.LatLngBoundsExpression = isValidBounds 
