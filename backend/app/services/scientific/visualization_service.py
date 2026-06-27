@@ -334,14 +334,24 @@ class VisualizationService:
             )
 
             if is_thermal:
-                # Invert: Cold temperatures (clouds) become 255, Warm temperatures (land/ocean) become 0
-                frame_norm = 255 - frame_norm
-                # Set RGB to pure white for clouds
-                rgba_img[..., 0] = 255
-                rgba_img[..., 1] = 255
-                rgba_img[..., 2] = 255
-                # Opacity matches cloud coldness
-                rgba_img[..., 3] = np.where(valid_mask, frame_norm, 0)
+                # Color mapping: Hot temperatures -> Yellow, Cold -> White
+                # In Kelvin: ~300K is Hot (surface), ~200K is Cold (cloud tops)
+                # We blend Blue channel from 0 (Yellow) to 255 (White)
+
+                blue_channel = np.clip(
+                    (300.0 - frame_clean) / (300.0 - 200.0) * 255, 0, 255
+                ).astype(np.uint8)
+
+                rgba_img[..., 0] = 255  # Red
+                rgba_img[..., 1] = 255  # Green
+                rgba_img[..., 2] = blue_channel  # Blue
+
+                # Alpha: Hot areas are semi-transparent (so map is visible), cold clouds are opaque
+                alpha_channel = np.clip(
+                    (MAX_VAL - frame_clean) / (MAX_VAL - MIN_VAL) * 200 + 55, 0, 255
+                ).astype(np.uint8)
+
+                rgba_img[..., 3] = np.where(valid_mask, alpha_channel, 0)
             else:
                 # Visible mapping: Grayscale with full opacity where data exists
                 rgba_img[..., 0] = frame_norm

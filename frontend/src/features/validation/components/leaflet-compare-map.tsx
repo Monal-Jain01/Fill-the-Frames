@@ -377,7 +377,7 @@ export default function LeafletCompareMap({ leftUrl, rightUrl, bounds }: Leaflet
       style={{ height: '100%', width: '100%', minHeight: '500px' }}
     >
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
       />
       <SideBySideControl leftUrl={leftUrl} rightUrl={rightUrl} bounds={mapBounds} />
