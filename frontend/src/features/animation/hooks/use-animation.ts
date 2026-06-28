@@ -32,10 +32,11 @@ export function useAnimation() {
   const processFrames = async (data: any[], targetVariable: string) => {
     if (!data || data.length === 0) return;
     
-    // Ensure URLs are absolute
+    // Ensure URLs are absolute and bounds are properly formatted arrays
     const absoluteData = data.map((frame: any) => ({
       ...frame,
-      imageUrl: frame.imageUrl.startsWith("http") ? frame.imageUrl : `${SERVER_ORIGIN}${frame.imageUrl}`
+      imageUrl: frame.imageUrl.startsWith("http") ? frame.imageUrl : `${SERVER_ORIGIN}${frame.imageUrl}`,
+      bounds: Array.isArray(frame.bounds) ? frame.bounds : (frame.bounds?.bounds || null)
     }));
 
     // Background: Fetch bounds for the first frame if needed
