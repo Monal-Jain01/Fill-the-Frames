@@ -189,10 +189,12 @@ class VisualizationService:
                 return {"bounds": [[8.0, 68.0], [37.0, 97.0]]}
 
             # SatPy scene area se bounds nikalna
-            area = parser.scene[variable].attrs.get("area")
+            area = getattr(
+                parser.scene[variable], "area", parser.scene[variable].attrs.get("area")
+            )
             if not area:
-                # Default bounds for India/Subcontinent as fallback
-                return {"bounds": [[8.0, 68.0], [37.0, 97.0]]}
+                # Default bounds for INSAT Full Disk as fallback
+                return {"bounds": [[-81.0, 1.0], [81.0, 163.0]]}
 
             # Optimization: Downsample lat/lon extraction to avoid massive memory usage on full-disk arrays
             lons, lats = area.get_lonlats()
@@ -256,7 +258,11 @@ class VisualizationService:
                 and getattr(parser, "scene", None) is not None
             ):
                 try:
-                    area = parser.scene[variable].attrs.get("area")
+                    area = getattr(
+                        parser.scene[variable],
+                        "area",
+                        parser.scene[variable].attrs.get("area"),
+                    )
                     if area:
                         # Downsample lonlats strictly for bounding box computation to save memory
                         lons_sub, lats_sub = area.get_lonlats()
@@ -431,7 +437,11 @@ class VisualizationService:
                 and getattr(parser, "scene", None) is not None
             ):
                 try:
-                    area = parser.scene[variable].attrs.get("area")
+                    area = getattr(
+                        parser.scene[variable],
+                        "area",
+                        parser.scene[variable].attrs.get("area"),
+                    )
                     if area:
                         # Downsample lonlats strictly for memory safety
                         lons_sub, lats_sub = area.get_lonlats()
