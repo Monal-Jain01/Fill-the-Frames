@@ -10,15 +10,26 @@ from .base_parser import BaseDatasetParser
 
 
 # --- MONKEY PATCHING SATPY ---
+original_get_area_def = Insat3DIMGL1BH5FileHandler.get_area_def
+
+
 def patched_get_area_def(self, ds_id):
     try:
-        return super(type(self), self).get_area_def(ds_id)
+        return original_get_area_def(self, ds_id)
     except Exception:
         logger.warning(
             "SatPy projection crash detected! Patching Altitude on the fly..."
         )
-        self.datatree.attrs["Observed_Altitude(km)"] = 35786.0
-        return super(type(self), self).get_area_def(ds_id)
+        # ISRO files sometimes miss this attribute, bypass KeyError by setting default
+        if (
+            hasattr(self, "file_content")
+            and "Observed_Altitude(km)" not in self.file_content
+        ):
+            self.file_content["Observed_Altitude(km)"] = np.array([35786.0])
+        elif hasattr(self, "datatree"):
+            self.datatree.attrs["Observed_Altitude(km)"] = 35786.0
+
+        return original_get_area_def(self, ds_id)
 
 
 Insat3DIMGL1BH5FileHandler.get_area_def = patched_get_area_def
