@@ -252,7 +252,7 @@ class VisualizationService:
             parser.load_dataset(file_path)
             VisualizationService.validate_variable(parser, variable)
 
-            # BYPASS REPROJECTION ONLY FOR AI FILES (which shouldn't reach here anyway)
+            # BYPASS REPROJECTION ONLY FOR AI FILES
             if (
                 getattr(parser, "is_ai_file", False) is False
                 and getattr(parser, "scene", None) is not None
@@ -260,16 +260,16 @@ class VisualizationService:
                 png_bytes, _ = VisualizationService.render_scene_to_png(
                     parser.scene, variable
                 )
-
-                # Save to disk cache for future rapid fetching
-                with open(png_cache_path, "wb") as f:
-                    f.write(png_bytes)
-
-                return io.BytesIO(png_bytes)
             else:
-                raise ValueError(
-                    "Manual AI frame rendering not supported without scene."
-                )
+                # Manual AI frames bypass reprojection since they lack the scene metadata
+                frame = parser.extract_time_slice(variable, 0).astype(np.float32)
+                png_bytes = VisualizationService._array_to_png(frame, variable)
+
+            # Save to disk cache for future rapid fetching
+            with open(png_cache_path, "wb") as f:
+                f.write(png_bytes)
+
+            return io.BytesIO(png_bytes)
 
         except HTTPException:
             raise
@@ -279,6 +279,58 @@ class VisualizationService:
         finally:
             if parser is not None:
                 parser.close()
+
+    @staticmethod
+    def _array_to_png(frame: np.ndarray, variable: str) -> bytes:
+        """Helper to convert a raw numpy array to RGBA PNG bytes with color mapping."""
+        if frame.ndim == 3:
+            frame = frame[0]
+
+        if (
+            "VIS" in variable.upper()
+            or "REF" in variable.upper()
+            or "ALBEDO" in variable.upper()
+        ):
+            is_thermal = False
+            f_mask = ~np.isnan(frame) & ~np.isinf(frame)
+            max_frame_val = np.nanmax(frame[f_mask]) if np.any(f_mask) else 1.0
+            MIN_VAL, MAX_VAL = 0.0, (1.0 if max_frame_val <= 1.5 else 100.0)
+        else:
+            is_thermal = True
+            MIN_VAL, MAX_VAL = 190.0, 313.0
+            f_mask = (
+                ~np.isnan(frame) & ~np.isinf(frame) & (frame > 50.0) & (frame < 400.0)
+            )
+
+        frame_clean = np.where(f_mask, frame, MIN_VAL)
+        frame_norm = np.clip(
+            (frame_clean - MIN_VAL) / (MAX_VAL - MIN_VAL) * 255, 0, 255
+        ).astype(np.uint8)
+
+        rgba_img = np.zeros(
+            (frame_norm.shape[0], frame_norm.shape[1], 4), dtype=np.uint8
+        )
+
+        if is_thermal:
+            CLOUD_MIN, CLOUD_MAX = 190.0, 290.0
+            temp_norm = np.clip(
+                (frame_clean - CLOUD_MIN) / (CLOUD_MAX - CLOUD_MIN) * 255, 0, 255
+            ).astype(np.uint8)
+            rgba_img[..., 0] = 255
+            rgba_img[..., 1] = 255
+            rgba_img[..., 2] = 255
+            alpha_channel = 255 - temp_norm
+            rgba_img[..., 3] = np.where(f_mask, alpha_channel, 0)
+        else:
+            rgba_img[..., 0] = frame_norm
+            rgba_img[..., 1] = frame_norm
+            rgba_img[..., 2] = frame_norm
+            rgba_img[..., 3] = np.where(f_mask, 255, 0)
+
+        img = Image.fromarray(rgba_img, mode="RGBA")
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format="PNG", optimize=True)
+        return img_byte_arr.getvalue()
 
     @staticmethod
     def render_scene_to_png(scene, variable: str) -> tuple[bytes, dict]:
