@@ -47,7 +47,11 @@ class NetCDFParser(BaseDatasetParser):
             if variable not in self.ds:
                 raise ValueError(f"Variable {variable} not found in AI dataset")
             # Return pure numpy array from xarray dataset
-            return self.ds[variable].values.astype(np.float32)
+            data = self.ds[variable].values.astype(np.float32)
+            # SatPy CF writer sometimes adds a time dimension (e.g. shape (1, 2816, 2805))
+            if data.ndim == 3:
+                return data[0]
+            return data
         return super().extract_time_slice(variable, time_index)
 
     def extract_metadata(self) -> dict:
