@@ -16,6 +16,8 @@ fs = HfFileSystem(token=HF_TOKEN)
 
 def _build_frames_response(variable: str) -> List[Dict[str, Any]]:
     """Helper to generate the current list of frames."""
+    # Force load from HF Bucket so the API route syncs with the background Scheduler!
+    state_manager.load()
     frames = state_manager.get_frames()
     if not frames:
         return []
@@ -60,40 +62,6 @@ async def get_animation_frame(filename: str):
         raise HTTPException(status_code=500, detail="Failed to serve frame")
 
 
-@router.delete("/hard-reset")
-async def hard_reset_bucket():
-    """
-    EMERGENCY ENDPOINT: Completely wipes the Hugging Face Bucket to reset the pipeline.
-    Deletes all old .h5, .nc, pngs, and state.json files.
-    """
-    try:
-        paths_to_delete = [
-            f"hf://buckets/{HF_BUCKET_ID}/mosdac",
-            f"hf://buckets/{HF_BUCKET_ID}/interpolations",
-            f"hf://buckets/{HF_BUCKET_ID}/animation_pngs",
-            f"hf://buckets/{HF_BUCKET_ID}/system/state.json",
-        ]
-
-        deleted_paths = []
-        for path in paths_to_delete:
-            if fs.exists(path):
-                fs.rm(path, recursive=True)
-                deleted_paths.append(path)
-                logger.info(f"Hard Reset: Deleted {path}")
-
-        # RAM me rakha hua state bhi zero kar do
-        state_manager._cache = None
-
-        return {
-            "success": True,
-            "message": "Bucket completely wiped and reset!",
-            "deleted": deleted_paths,
-        }
-    except Exception as e:
-        logger.error(f"Hard reset failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to hard reset: {str(e)}")
-
-
 @router.get("/latest")
 async def get_latest_animation_frames(variable: str = "TIR1") -> List[Dict[str, Any]]:
     """Get the latest sequence of frames (both raw and AI) via standard GET request."""
@@ -118,20 +86,21 @@ async def stream_animation_frames(variable: str = "TIR1"):
         last_updated = None
         while True:
             try:
-                # Force a fresh read from the cache/bucket
-                state = state_manager.get_state()
-                current_updated = state.get("last_updated")
+                # _build_frames_response automatically forces state_manager.load()
+                frames_data = _build_frames_response(variable)
+
+                # Fetch the freshly loaded state to check timestamp
+                current_updated = state_manager.get_state().get("last_updated")
 
                 # If the state has been updated (or it's the very first connection)
                 if current_updated != last_updated:
-                    frames_data = _build_frames_response(variable)
                     # SSE format: data: {json_string}\n\n
                     yield f"data: {json.dumps(frames_data)}\n\n"
                     last_updated = current_updated
             except Exception as e:
                 logger.error(f"SSE stream error: {e}")
 
-            # Check for changes every 15 seconds (very lightweight)
+            # Check for changes every 15 seconds
             await asyncio.sleep(15)
 
     return StreamingResponse(
