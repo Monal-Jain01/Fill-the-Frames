@@ -4,6 +4,7 @@ export interface AnimationFrame {
   frameId: string;
   timestamp: string;
   imageUrl: string;
+  type?: "raw" | "ai";
   bounds?: [[number, number], [number, number]];
   variable?: string;
 }

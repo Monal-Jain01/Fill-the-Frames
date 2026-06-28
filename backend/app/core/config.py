@@ -13,10 +13,24 @@ IS_DEBUG: bool = config("IS_DEBUG", cast=bool, default=True)
 
 # 🚨 NAYA: Hugging Face Configurations
 HF_TOKEN: str = config("HF_TOKEN", cast=str, default="")
-HF_BUCKET_ID: str = config("HF_BUCKET_ID", cast=str, default="YourUsername/satellite-data-bucket")
+HF_BUCKET_ID: str = config(
+    "HF_BUCKET_ID", cast=str, default="YourUsername/satellite-data-bucket"
+)
 
 # 🚨 NAYA: Serverless Temp Storage instead of UPLOAD_DIR
-TEMP_STORAGE_DIR: str = config("TEMP_STORAGE_DIR", cast=str, default="/tmp/satellite_cache")
+TEMP_STORAGE_DIR: str = config(
+    "TEMP_STORAGE_DIR", cast=str, default="/tmp/satellite_cache"
+)
 
 MODEL_DIR: str = config("MODEL_DIR", cast=str, default="models")
-DEFAULT_MODEL_PATH: str = config("DEFAULT_MODEL_PATH", cast=str, default="models/2month_model.onnx")
+DEFAULT_MODEL_PATH: str = config(
+    "DEFAULT_MODEL_PATH", cast=str, default="models/2month_model.onnx"
+)
+
+# MOSDAC Automated Pipeline Configuration
+MOSDAC_USERNAME: str = config("MOSDAC_USERNAME", cast=str, default="")
+MOSDAC_PASSWORD: str = config("MOSDAC_PASSWORD", cast=str, default="")
+MOSDAC_DATASET_ID: str = config("MOSDAC_DATASET_ID", cast=str, default="3DIMG_L1B_STD")
+CHECK_INTERVAL: int = config("CHECK_INTERVAL", cast=int, default=900)  # 15 minutes
+WINDOW_SIZE: int = config("WINDOW_SIZE", cast=int, default=90)  # 45 raw + 45 AI frames
+ANIMATION_CHANNEL: str = config("ANIMATION_CHANNEL", cast=str, default="TIR1")

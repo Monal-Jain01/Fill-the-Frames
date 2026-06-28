@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useAnimationStore } from "@/store/animation-store";
+import { animationClient } from "@/lib/api/animation-client";
+import { visualizationClient } from "@/lib/api/visualization-client";
 
 export function useAnimation() {
   const { 
@@ -8,14 +10,62 @@ export function useAnimation() {
     currentFrameIndex, 
     playing, 
     playbackSpeed, 
-    nextFrame 
+    nextFrame,
+    setFrames,
+    setLoading,
+    setError
   } = useAnimationStore();
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Default bounds for India (used while fetching real bounds)
+  const fallbackBounds: [[number, number], [number, number]] = [[8.0, 68.0], [37.0, 97.0]];
+
   const filteredFrames = selectedVariable 
     ? frames.filter(f => f.variable === selectedVariable)
     : frames;
+
+  // Poll for latest frames every 15 minutes
+  useEffect(() => {
+    const fetchFrames = async () => {
+      try {
+        setLoading(true);
+        const data = await animationClient.getLatestFrames(selectedVariable || "TIR1");
+        
+        // Background: Fetch bounds for the first frame if needed
+        if (data.length > 0 && !data[0].bounds) {
+          try {
+            const boundsRes = await visualizationClient.getBounds(data[0].frameId, selectedVariable || "TIR1");
+            const boundsArray = (boundsRes as any).bounds || (boundsRes as any).data?.bounds;
+            // Apply to all frames (assuming they share the same geographic area)
+            data.forEach(f => f.bounds = boundsArray);
+          } catch (e) {
+            console.error("Failed to fetch bounds", e);
+            data.forEach(f => f.bounds = fallbackBounds);
+          }
+        }
+        
+        setFrames(data);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch animation frames", err);
+        setError("Could not load latest animation frames.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Initial fetch
+    fetchFrames();
+
+    // Poll every 15 minutes (900000 ms)
+    pollingRef.current = setInterval(fetchFrames, 900000);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [selectedVariable, setFrames, setLoading, setError]);
 
   // Timer orchestration
   useEffect(() => {

@@ -29,10 +29,24 @@ class VisualizationService:
         local_cache_dir = Path(TEMP_STORAGE_DIR) / file_id
         local_cache_dir.mkdir(parents=True, exist_ok=True)
 
+        # Check if file_id is a direct bucket path (e.g., from animation scheduler)
+        if "/" in file_id:
+            remote_path = f"hf://buckets/{HF_BUCKET_ID}/{file_id}"
+            if fs.exists(remote_path):
+                logger.info(f"Downloading direct bucket path: {remote_path}")
+                local_dir = Path(TEMP_STORAGE_DIR) / "cache"
+                local_dir.mkdir(parents=True, exist_ok=True)
+                local_file = local_dir / Path(file_id).name
+                if not local_file.exists():
+                    fs.get(remote_path, str(local_file))
+                return str(local_file)
+
         # Check organized paths first, then fallback to legacy root paths
         potential_remote_dirs = [
             f"hf://buckets/{HF_BUCKET_ID}/uploads/{file_id}",
             f"hf://buckets/{HF_BUCKET_ID}/interpolations/{file_id}",
+            f"hf://buckets/{HF_BUCKET_ID}/interpolations/scheduler/{file_id}",
+            f"hf://buckets/{HF_BUCKET_ID}/mosdac/{file_id}",
             f"hf://buckets/{HF_BUCKET_ID}/{file_id}",
         ]
 

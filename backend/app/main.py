@@ -17,6 +17,7 @@ from app.api import (
     metrics,
     upload,
     visualization,
+    animation,
 )
 from app.core.config import (
     API_PREFIX,
@@ -26,6 +27,9 @@ from app.core.config import (
     TEMP_STORAGE_DIR,
 )
 from app.services.inference.model_loader import ModelLoader
+from app.services.scheduler.scheduler import AnimationScheduler
+
+scheduler_instance = AnimationScheduler()
 
 
 async def cleanup_temp_storage():
@@ -71,6 +75,9 @@ async def lifespan(app: FastAPI):
 
     # Start garbage collector
     cleanup_task = asyncio.create_task(cleanup_temp_storage())
+
+    # Start Animation Scheduler
+    scheduler_task = asyncio.create_task(scheduler_instance.start())
 
     # 1. Server chalu hote hi Model RAM me load karo
     try:
@@ -138,6 +145,9 @@ def get_app() -> FastAPI:
     )
     fast_app.include_router(
         export.router, prefix=f"{API_PREFIX}/export", tags=["Export"]
+    )
+    fast_app.include_router(
+        animation.router, prefix=f"{API_PREFIX}/animation", tags=["Animation"]
     )
 
     return fast_app

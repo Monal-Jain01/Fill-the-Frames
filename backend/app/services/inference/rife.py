@@ -15,9 +15,9 @@ class SatelliteInterpolationModel:
     MIN_BT = 90.0
     MAX_BT = 313.0
 
-    def __init__(self) -> None:
+    def __init__(self, force_cpu: bool = False) -> None:
         # Naya session banane ki jagah RAM se pre-loaded model uthaya
-        self.session = ModelLoader.get_session()
+        self.session = ModelLoader.get_session(force_cpu=force_cpu)
 
         # ONNX ke input aur output node ke naam dynamically nikal liye
         self.input_name = self.session.get_inputs()[0].name
