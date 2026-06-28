@@ -232,7 +232,9 @@ class VisualizationService:
         file_path = VisualizationService._get_file_path(file_id)
 
         # Optimization: Check if we already rendered this specific PNG before doing heavy math
-        local_cache_dir = Path(TEMP_STORAGE_DIR) / file_id
+        safe_name = Path(file_id).name
+        local_cache_dir = Path(TEMP_STORAGE_DIR) / safe_name
+        local_cache_dir.mkdir(parents=True, exist_ok=True)
         png_cache_path = local_cache_dir / f"{variable}_map.png"
 
         if png_cache_path.exists():
