@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useAnimationStore } from "@/store/animation-store";
-import { animationClient } from "@/lib/api/animation-client";
 import { visualizationClient } from "@/lib/api/visualization-client";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://sid385-fill-the-frames.hf.space/api/v1";
 
 export function useAnimation() {
   const { 
@@ -17,7 +18,6 @@ export function useAnimation() {
   } = useAnimationStore();
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
   
   // Default bounds for India (used while fetching real bounds)
   const fallbackBounds: [[number, number], [number, number]] = [[8.0, 68.0], [37.0, 97.0]];
@@ -26,44 +26,46 @@ export function useAnimation() {
     ? frames.filter(f => f.variable === selectedVariable)
     : frames;
 
-  // Poll for latest frames every 15 minutes
+  // Listen for Server-Sent Events (SSE) stream for live updates
   useEffect(() => {
-    const fetchFrames = async () => {
+    setLoading(true);
+    const targetVariable = selectedVariable || "TIR1";
+    
+    // Connect to the live stream
+    const eventSource = new EventSource(`${BASE_URL}/animation/stream?variable=${targetVariable}`);
+    
+    eventSource.onmessage = async (event) => {
       try {
-        setLoading(true);
-        const data = await animationClient.getLatestFrames(selectedVariable || "TIR1");
+        const data = JSON.parse(event.data);
         
         // Background: Fetch bounds for the first frame if needed
         if (data.length > 0 && !data[0].bounds) {
           try {
-            const boundsRes = await visualizationClient.getBounds(data[0].frameId, selectedVariable || "TIR1");
+            const boundsRes = await visualizationClient.getBounds(data[0].frameId, targetVariable);
             const boundsArray = (boundsRes as any).bounds || (boundsRes as any).data?.bounds;
-            // Apply to all frames (assuming they share the same geographic area)
-            data.forEach(f => f.bounds = boundsArray);
+            data.forEach((f: any) => f.bounds = boundsArray);
           } catch (e) {
             console.error("Failed to fetch bounds", e);
-            data.forEach(f => f.bounds = fallbackBounds);
+            data.forEach((f: any) => f.bounds = fallbackBounds);
           }
         }
         
         setFrames(data);
         setError(null);
-      } catch (err) {
-        console.error("Failed to fetch animation frames", err);
-        setError("Could not load latest animation frames.");
-      } finally {
         setLoading(false);
+      } catch (err) {
+        console.error("Failed to parse SSE animation frames", err);
       }
     };
 
-    // Initial fetch
-    fetchFrames();
-
-    // Poll every 15 minutes (900000 ms)
-    pollingRef.current = setInterval(fetchFrames, 900000);
+    eventSource.onerror = (err) => {
+      console.error("SSE Stream connection error", err);
+      // EventSource auto-reconnects, but we can set a soft error if needed
+    };
 
     return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+      // Close connection when unmounting or switching variables
+      eventSource.close();
     };
   }, [selectedVariable, setFrames, setLoading, setError]);
 

@@ -173,6 +173,7 @@ class StateManager:
 
     def trim_to_window(self, window_size: int) -> int:
         """Remove oldest frames to keep total count within window_size.
+        Also physically deletes the removed files from the HF Bucket.
         Returns the number of frames removed.
         """
         state = self.get_state()
@@ -185,7 +186,23 @@ class StateManager:
         state["frames"] = frames[excess:]
         self._cache = state
 
+        # Physically delete the removed files from the bucket
+        deleted_count = 0
+        for frame in removed:
+            try:
+                bucket_path = frame.get("bucket_path")
+                if bucket_path:
+                    remote_path = f"hf://buckets/{HF_BUCKET_ID}/{bucket_path}"
+                    if self.fs.exists(remote_path):
+                        self.fs.rm(remote_path)
+                        logger.info(f"Deleted old file from bucket: {remote_path}")
+                        deleted_count += 1
+            except Exception as e:
+                logger.error(
+                    f"Failed to delete old file {frame.get('filename')} from bucket: {e}"
+                )
+
         logger.info(
-            f"Trimmed {len(removed)} old frames to maintain window of {window_size}."
+            f"Trimmed {len(removed)} old frames (physically deleted {deleted_count} files) to maintain window of {window_size}."
         )
         return len(removed)

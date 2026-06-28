@@ -60,8 +60,8 @@ class AnimationScheduler:
             logger.error("Skipping cycle due to login failure.")
             return
 
-        # 2. Search for recent files (last 24h)
-        entries = await self.mosdac.search_recent(hours_back=24, count=48)
+        # 2. Search for recent files (last 24h, exactly 45 files)
+        entries = await self.mosdac.search_recent(hours_back=24, count=45)
 
         # 3. Filter for Target Channel (e.g., TIR1)
         target_entries = [
