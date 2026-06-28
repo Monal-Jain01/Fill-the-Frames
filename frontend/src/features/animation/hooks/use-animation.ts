@@ -37,19 +37,6 @@ export function useAnimation() {
     eventSource.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
-        
-        // Background: Fetch bounds for the first frame if needed
-        if (data.length > 0 && !data[0].bounds) {
-          try {
-            const boundsRes = await visualizationClient.getBounds(data[0].frameId, targetVariable);
-            const boundsArray = (boundsRes as any).bounds || (boundsRes as any).data?.bounds;
-            data.forEach((f: any) => f.bounds = boundsArray);
-          } catch (e) {
-            console.error("Failed to fetch bounds", e);
-            data.forEach((f: any) => f.bounds = fallbackBounds);
-          }
-        }
-        
         setFrames(data);
         setError(null);
         setLoading(false);

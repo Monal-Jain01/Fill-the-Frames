@@ -28,15 +28,17 @@ class StateManager:
             "version": 1,
             "last_updated": datetime.utcnow().isoformat() + "Z",
             "last_check": None,
+            "latest_raw_h5": None,
             "frames": [],
             # frames[] = [
             #   {
-            #     "filename": "3DIMG_..._TIR1.h5",
-            #     "bucket_path": "mosdac/3DIMG_..._TIR1.h5",
+            #     "filename": "3SIMG_..._TIR1.h5",
+            #     "png_filename": "3SIMG_..._TIR1.png",
             #     "timestamp": "2026-06-28T06:00:00Z",
             #     "type": "raw",              # "raw" | "ai"
-            #     "status": "downloaded",      # "downloaded" | "interpolated" | "failed"
+            #     "status": "interpolated",
             #     "interpolated_from": null,   # only for type="ai": [filename_a, filename_b]
+            #     "bounds": [[8, 68], [37, 97]],
             #     "added_at": "2026-06-28T07:00:00Z"
             #   }
             # ]
@@ -96,7 +98,17 @@ class StateManager:
         """Get set of all raw filenames already tracked."""
         return {f["filename"] for f in self.get_frames("raw")}
 
-    def add_raw_frame(self, filename: str, bucket_path: str, timestamp: str) -> None:
+    def get_latest_raw_h5(self) -> Optional[str]:
+        return self.get_state().get("latest_raw_h5")
+
+    def set_latest_raw_h5(self, filename: str) -> None:
+        state = self.get_state()
+        state["latest_raw_h5"] = filename
+        self._cache = state
+
+    def add_raw_frame(
+        self, filename: str, png_filename: str, timestamp: str, bounds: dict
+    ) -> None:
         """Register a newly downloaded raw MOSDAC frame."""
         state = self.get_state()
         # Deduplicate
@@ -108,10 +120,11 @@ class StateManager:
         state["frames"].append(
             {
                 "filename": filename,
-                "bucket_path": bucket_path,
+                "png_filename": png_filename,
                 "timestamp": timestamp,
                 "type": "raw",
-                "status": "downloaded",
+                "status": "interpolated",
+                "bounds": bounds,
                 "interpolated_from": None,
                 "added_at": datetime.utcnow().isoformat() + "Z",
             }
@@ -123,8 +136,9 @@ class StateManager:
     def add_ai_frame(
         self,
         filename: str,
-        bucket_path: str,
+        png_filename: str,
         timestamp: str,
+        bounds: dict,
         interpolated_from: List[str],
     ) -> None:
         """Register an AI-interpolated frame."""
@@ -137,10 +151,11 @@ class StateManager:
         state["frames"].append(
             {
                 "filename": filename,
-                "bucket_path": bucket_path,
+                "png_filename": png_filename,
                 "timestamp": timestamp,
                 "type": "ai",
                 "status": "interpolated",
+                "bounds": bounds,
                 "interpolated_from": interpolated_from,
                 "added_at": datetime.utcnow().isoformat() + "Z",
             }
@@ -190,12 +205,14 @@ class StateManager:
         deleted_count = 0
         for frame in removed:
             try:
-                bucket_path = frame.get("bucket_path")
-                if bucket_path:
-                    remote_path = f"hf://buckets/{HF_BUCKET_ID}/{bucket_path}"
+                png_file = frame.get("png_filename")
+                if png_file:
+                    remote_path = (
+                        f"hf://buckets/{HF_BUCKET_ID}/animation_pngs/{png_file}"
+                    )
                     if self.fs.exists(remote_path):
                         self.fs.rm(remote_path)
-                        logger.info(f"Deleted old file from bucket: {remote_path}")
+                        logger.info(f"Deleted old PNG from bucket: {remote_path}")
                         deleted_count += 1
             except Exception as e:
                 logger.error(

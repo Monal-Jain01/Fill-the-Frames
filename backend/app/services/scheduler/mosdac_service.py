@@ -293,15 +293,7 @@ class MosdacService:
                     size_mb = downloaded / (1024 * 1024)
                     logger.info(f"Downloaded {filename} ({size_mb:.1f} MB)")
 
-                # Upload to HF bucket
-                self.fs.put(str(final_path), remote_path)
-                logger.info(f"Uploaded {filename} to bucket at {bucket_path}")
-
-                # Clean up local file to save disk
-                if final_path.exists():
-                    final_path.unlink()
-
-                return bucket_path
+                return str(final_path)
 
             except (httpx.ConnectError, httpx.TimeoutException) as e:
                 if delay is None:

@@ -26,7 +26,11 @@ class VisualizationService:
         Smart fetcher: Checks local serverless cache first, otherwise downloads from HF Bucket.
         Handles both direct files (uploaded) and folder-based UUIDs (AI generated).
         """
-        local_cache_dir = Path(TEMP_STORAGE_DIR) / file_id
+        # If absolute path is passed, just return it
+        if file_id.startswith("/"):
+            return file_id
+
+        local_cache_dir = Path(TEMP_STORAGE_DIR) / Path(file_id).stem
         local_cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Check if file_id is a direct bucket path (e.g., from animation scheduler)
@@ -398,6 +402,16 @@ class VisualizationService:
         finally:
             if parser is not None:
                 parser.close()
+
+    @staticmethod
+    def prebake_png(local_path: str, variable: str):
+        """
+        Utility for the ETL pipeline to generate both PNG bytes and map bounds in one pass.
+        Returns: Tuple[bytes, dict (Leaflet bounds format)]
+        """
+        bounds = VisualizationService.get_map_bounds(local_path, variable)
+        img_buffer = VisualizationService.get_map_layer_image(local_path, variable)
+        return img_buffer.getvalue(), bounds
 
     @staticmethod
     def get_error_map_layer(

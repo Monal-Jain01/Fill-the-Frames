@@ -2,13 +2,16 @@ import json
 import asyncio
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from loguru import logger
+from huggingface_hub import HfFileSystem
 
+from app.core.config import HF_BUCKET_ID, HF_TOKEN
 from app.services.scheduler.state_manager import StateManager
 
 router = APIRouter()
 state_manager = StateManager()
+fs = HfFileSystem(token=HF_TOKEN)
 
 
 def _build_frames_response(variable: str) -> List[Dict[str, Any]]:
@@ -19,13 +22,17 @@ def _build_frames_response(variable: str) -> List[Dict[str, Any]]:
 
     result = []
     for frame in frames:
-        filename = frame["filename"]
+        png_filename = frame.get("png_filename")
+        if not png_filename:
+            continue
+
         result.append(
             {
-                "frameId": filename,
+                "frameId": frame["filename"],
                 "timestamp": frame["timestamp"],
-                "imageUrl": f"/api/v1/visualization/{filename}/layer?variable={variable}",
+                "imageUrl": f"/api/v1/animation/frame/{png_filename}",
                 "type": frame["type"],
+                "bounds": frame.get("bounds"),
                 "variable": variable,
             }
         )
@@ -33,6 +40,24 @@ def _build_frames_response(variable: str) -> List[Dict[str, Any]]:
     # Sort by timestamp strictly
     result.sort(key=lambda x: x["timestamp"])
     return result
+
+
+@router.get("/frame/{filename}")
+async def get_animation_frame(filename: str):
+    """Serve a pre-baked transparent PNG directly from the HF Bucket."""
+    remote_path = f"hf://buckets/{HF_BUCKET_ID}/animation_pngs/{filename}"
+
+    try:
+        if not fs.exists(remote_path):
+            raise HTTPException(status_code=404, detail="Frame not found in bucket")
+
+        image_bytes = fs.read_bytes(remote_path)
+        return Response(content=image_bytes, media_type="image/png")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to serve PNG {filename}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to serve frame")
 
 
 @router.get("/latest")
