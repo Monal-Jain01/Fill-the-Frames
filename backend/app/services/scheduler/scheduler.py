@@ -89,7 +89,7 @@ class AnimationScheduler:
                 continue
 
             logger.info(f"Processing new frame: {filename}")
-
+            
             # 1. Download file asynchronously in the main event loop
             local_b_str = await self.mosdac.download_file(record_id, filename)
             if not local_b_str:
@@ -112,89 +112,85 @@ class AnimationScheduler:
 
         logger.info("--- Scheduler Cycle Complete ---")
 
-    def _process_single_frame_cpu(
-        self, filename: str, timestamp: str, local_b_str: str
-    ):
+    def _process_single_frame_cpu(self, filename: str, timestamp: str, local_b_str: str):
         """Runs synchronously in a thread. Handles interpolating, prebaking, and uploading."""
         tmp_dir = Path(TEMP_STORAGE_DIR) / "scheduler"
         tmp_dir.mkdir(parents=True, exist_ok=True)
-
+        
         try:
             local_b = Path(local_b_str)
-            latest_raw = self.state.get_latest_raw_h5()
-
+            state_dict = self.state.get_state()
+            latest_raw_path = state_dict.get("latest_raw_h5_path")
+            latest_raw_filename = state_dict.get("latest_raw_h5_filename")
+            
             # Upload paths
             png_b_filename = filename.replace(".h5", ".png").replace(".hdf5", ".png")
-            png_b_remote = (
-                f"hf://buckets/{HF_BUCKET_ID}/animation_pngs/{png_b_filename}"
-            )
+            png_b_remote = f"hf://buckets/{HF_BUCKET_ID}/animation_pngs/{png_b_filename}"
             h5_b_remote = f"hf://buckets/{HF_BUCKET_ID}/mosdac/latest_raw.h5"
 
-            if latest_raw:
+            if latest_raw_path and latest_raw_filename:
                 # We have a previous frame! We need to fetch it and interpolate.
                 local_a = tmp_dir / "latest_raw.h5"
                 if not local_a.exists():
-                    self.fs.get(
-                        f"hf://buckets/{HF_BUCKET_ID}/{latest_raw}", str(local_a)
-                    )
-
+                    logger.info("Fetching previous raw frame from bucket for AI interpolation...")
+                    self.fs.get(f"hf://buckets/{HF_BUCKET_ID}/{latest_raw_path}", str(local_a))
+                
                 # 1. Interpolate
-                ai_filename = f"AI_{local_a.stem}_to_{filename}.nc"
+                clean_stem_a = latest_raw_filename.replace('.h5', '')
+                clean_stem_b = filename.replace('.h5', '')
+                ai_filename = f"AI_{clean_stem_a}_to_{clean_stem_b}.nc"
                 local_ai = tmp_dir / ai_filename
-                interpolated_time = self._run_interpolation_logic(
-                    str(local_a), str(local_b), str(local_ai)
-                )
-
+                
+                logger.info(f"Running AI Interpolation between {latest_raw_filename} and {filename}...")
+                interpolated_time = self._run_interpolation_logic(str(local_a), str(local_b), str(local_ai))
+                
                 if interpolated_time:
+                    logger.info("Interpolation successful. Prebaking AI PNG...")
                     # 2. Prebake AI Frame
-                    ai_png_bytes, ai_bounds = VisualizationService.prebake_png(
-                        str(local_ai), ANIMATION_CHANNEL
-                    )
+                    ai_png_bytes, ai_bounds = VisualizationService.prebake_png(str(local_ai), ANIMATION_CHANNEL)
                     ai_png_filename = ai_filename.replace(".nc", ".png")
-                    ai_png_remote = (
-                        f"hf://buckets/{HF_BUCKET_ID}/animation_pngs/{ai_png_filename}"
-                    )
+                    ai_png_remote = f"hf://buckets/{HF_BUCKET_ID}/animation_pngs/{ai_png_filename}"
                     self.fs.write_bytes(ai_png_remote, ai_png_bytes)
-
+                    
                     ts_iso = interpolated_time.strftime("%Y-%m-%dT%H:%M:%SZ")
                     self.state.add_ai_frame(
                         ai_filename,
                         ai_png_filename,
                         ts_iso,
                         ai_bounds,
-                        [local_a.stem, filename],
+                        [latest_raw_filename, filename],
                     )
+                    
+                    if local_ai.exists(): local_ai.unlink()
+                
+                # local_a will be overwritten by local_b shortly, no need to unlink yet
 
-                    if local_ai.exists():
-                        local_ai.unlink()
-
-                if local_a.exists():
-                    local_a.unlink()
-
+            logger.info("Prebaking new Raw Frame PNG...")
             # 3. Prebake New Raw Frame (Frame B)
-            b_png_bytes, b_bounds = VisualizationService.prebake_png(
-                str(local_b), ANIMATION_CHANNEL
-            )
+            b_png_bytes, b_bounds = VisualizationService.prebake_png(str(local_b), ANIMATION_CHANNEL)
             self.fs.write_bytes(png_b_remote, b_png_bytes)
-
+            
+            logger.info("Uploading new Raw Frame to bucket for next cycle...")
             # 4. Upload Frame B as the new latest raw H5
             self.fs.put(str(local_b), h5_b_remote)
-
-            # 5. Add Frame B to state
+            
+            # 5. Save local_b as local_a for the next iteration to prevent re-downloading 500MB!
+            import shutil
+            shutil.copy(str(local_b), str(tmp_dir / "latest_raw.h5"))
+            
+            # 6. Add Frame B to state
             self.state.add_raw_frame(filename, png_b_filename, timestamp, b_bounds)
-            self.state.set_latest_raw_h5("mosdac/latest_raw.h5")
-
-            # 6. Cleanup
-            if local_b.exists():
-                local_b.unlink()
+            state_dict["latest_raw_h5_path"] = "mosdac/latest_raw.h5"
+            state_dict["latest_raw_h5_filename"] = filename
+            
+            # 7. Cleanup
+            if local_b.exists(): local_b.unlink()
 
         except Exception as e:
             logger.error(f"CPU Processing failed: {e}")
             raise
 
-    def _run_interpolation_logic(
-        self, local_a_str: str, local_b_str: str, local_out_str: str
-    ):
+    def _run_interpolation_logic(self, local_a_str: str, local_b_str: str, local_out_str: str):
         """Extracts matrices and runs the AI model. Returns the interpolated timestamp."""
         parser_a = None
         parser_b = None
@@ -226,14 +222,12 @@ class AnimationScheduler:
                 ANIMATION_CHANNEL,
                 interpolated_time=interpolated_time,
             )
-
+            
             return interpolated_time
 
         except Exception as e:
             logger.error(f"Interpolation AI failed: {e}")
             return None
         finally:
-            if parser_a:
-                parser_a.close()
-            if parser_b:
-                parser_b.close()
+            if parser_a: parser_a.close()
+            if parser_b: parser_b.close()
