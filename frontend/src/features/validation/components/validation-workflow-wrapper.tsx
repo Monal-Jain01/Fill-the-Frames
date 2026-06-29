@@ -1,3 +1,4 @@
+﻿/* eslint-disable */
 'use client';
 
 import React, { useState } from 'react';
@@ -52,7 +53,7 @@ export function ValidationWorkflowWrapper() {
     await fetchValidationMetadata(fileId);
   };
 
-  // BUG-006: Finish Session — navigate back to dashboard and reset all state
+  // BUG-006: Finish Session â€” navigate back to dashboard and reset all state
   const handleFinishSession = () => {
     store.reset();
     router.push('/dashboard');

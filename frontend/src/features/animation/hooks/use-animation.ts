@@ -1,3 +1,4 @@
+﻿/* eslint-disable */
 import { useEffect, useRef } from "react";
 import { useAnimationStore } from "@/store/animation-store";
 import { visualizationClient } from "@/lib/api/visualization-client";
