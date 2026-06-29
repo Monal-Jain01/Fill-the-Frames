@@ -10,6 +10,7 @@ export function useAnimation() {
   const { 
     frames, 
     selectedVariable,
+    currentFrameIndex, 
     playing, 
     playbackSpeed, 
     nextFrame,
@@ -122,11 +123,12 @@ export function useAnimation() {
     };
   }, [playing, playbackSpeed, filteredFrames.length, nextFrame]);
 
-  // Preload all frames for the selected sequence
+  // Preloading N+1 and N+2
   useEffect(() => {
     if (filteredFrames.length === 0) return;
 
-    filteredFrames.forEach(frame => {
+    const preloadImage = (index: number) => {
+      const frame = filteredFrames[index % filteredFrames.length];
       if (frame && frame.imageUrl) {
         const img = new Image();
         img.src = frame.imageUrl;

@@ -48,6 +48,7 @@ export function ValidationViewer() {
     );
   }
 
+  //Corrected the signature for visualizationClient.getLayerUrl which was receiving 3 arguments instead of 2 
   const generatedUrl = visualizationClient.getLayerUrl(artifactId, varName);
   const truthUrl = visualizationClient.getLayerUrl(groundTruthFileId, varName);
 

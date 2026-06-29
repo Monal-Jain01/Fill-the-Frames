@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { MapContainer, TileLayer, ImageOverlay, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { LatLngBoundsExpression } from "leaflet";
 import { useAnimationStore } from "@/store/animation-store";
 import { useAnimation } from "@/features/animation/hooks/use-animation";
 
