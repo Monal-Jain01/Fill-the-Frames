@@ -4,7 +4,7 @@ import { healthClient } from '@/lib/api/health-client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Cpu, Settings2, ShieldCheck, Loader2 } from 'lucide-react';
+import { Cpu, Settings2, ShieldCheck, Loader2, Info } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 
@@ -88,6 +88,13 @@ export function InterpolationConfigPanel({ config, onConfigChange, disabled, ava
         </div>
       </CardHeader>
       <CardContent className="pt-6 flex flex-col gap-6">
+        <div className="bg-muted/50 border border-muted text-muted-foreground text-sm p-3 rounded-md flex items-start gap-3">
+          <Info className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
+          <p>
+            <strong>Note:</strong> Inference uses CPU by default and can take 2-5 minutes per frame. If GPU with CUDA is available, inference is much faster (1-2 seconds).
+          </p>
+        </div>
+      
         <div className="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between">
           <div className="flex flex-col gap-2 flex-1">
             <span className="text-sm font-semibold">Interpolation Ratio</span>
